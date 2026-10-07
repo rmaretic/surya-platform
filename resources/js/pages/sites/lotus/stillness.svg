@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 820" fill="none">
+  <!-- Original project illustration, created for Surya. CC0-1.0. -->
+  <defs>
+    <linearGradient id="sky" x2="0" y2="820" gradientUnits="userSpaceOnUse"><stop stop-color="#e7cbb3"/><stop offset="1" stop-color="#f2e6d3"/></linearGradient>
+    <linearGradient id="stone" x2="600" y2="700" gradientUnits="userSpaceOnUse"><stop stop-color="#b5b39a"/><stop offset="1" stop-color="#6b7963"/></linearGradient>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h700v820H0z"/>
+  <circle cx="472" cy="224" r="101" fill="#f8ecd5"/>
+  <path d="M-70 484C89 305 255 501 410 384s281-35 357 76v360H-70Z" fill="#c3b6a0"/>
+  <path d="M-32 625c177-230 301 76 504-120 117-114 237-84 296-27v342H-32Z" fill="#8c9980"/>
+  <path d="M-70 703c178-114 302-32 445-98 198-91 277-11 367 54v161H-70Z" fill="#63715d"/>
+  <ellipse cx="339" cy="747" rx="228" ry="24" fill="#354b3b" opacity=".18"/>
+  <path d="M190 694c-4-31 55-59 148-61 104-3 186 26 180 60-5 28-77 49-170 49-89 0-154-19-158-48Z" fill="#d9ceba"/>
+  <path d="M235 634c-11-38 24-75 98-80 74-4 133 18 139 53 8 44-50 72-122 73-62 2-106-13-115-46Z" fill="url(#stone)"/>
+  <path d="M283 539c0-28 22-44 66-45 43-2 82 12 80 39-2 25-30 37-73 38-43 1-73-10-73-32Z" fill="#e9ddc9"/>
+  <g stroke="#f8ecd5" stroke-width="2" opacity=".6"><path d="M85 649c-13-89 0-176 47-254"/><path d="M101 525c-29-8-47-33-52-62 30 10 49 29 52 62Zm12-56c4-34 28-62 59-70-6 34-24 55-59 70Z"/></g>
+</svg>

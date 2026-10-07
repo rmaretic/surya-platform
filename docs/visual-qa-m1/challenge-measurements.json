@@ -1,0 +1,32 @@
+[
+    {
+        "mode": "otp",
+        "overflow": false,
+        "width": 375
+    },
+    {
+        "mode": "otp",
+        "overflow": false,
+        "width": 768
+    },
+    {
+        "mode": "otp",
+        "overflow": false,
+        "width": 1440
+    },
+    {
+        "mode": "recovery",
+        "overflow": false,
+        "width": 375
+    },
+    {
+        "mode": "recovery",
+        "overflow": false,
+        "width": 768
+    },
+    {
+        "mode": "recovery",
+        "overflow": false,
+        "width": 1440
+    }
+]

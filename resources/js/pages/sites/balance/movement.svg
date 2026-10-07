@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 650" fill="none">
+  <!-- Original project illustration, created for Surya. CC0-1.0. -->
+  <path fill="#263b3b" d="M0 0h1100v650H0z"/>
+  <g stroke="#49605b" stroke-width="1"><path d="M0 130h1100M0 260h1100M0 390h1100M0 520h1100M220 0v650M440 0v650M660 0v650M880 0v650"/></g>
+  <circle cx="790" cy="315" r="234" fill="#c8dc86"/>
+  <circle cx="790" cy="315" r="187" stroke="#263b3b" stroke-width="1"/>
+  <path d="m0 650 396-396 396 396Z" fill="#526b60"/>
+  <path d="m40 650 356-356 356 356" stroke="#9bac88"/>
+  <ellipse cx="637" cy="584" rx="298" ry="18" fill="#142727"/>
+  <path d="m570 340-68 114-121 119m197-220 93 82 145 133" stroke="#e6b28e" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m573 256-6 96" stroke="#f0e7d9" stroke-width="72" stroke-linecap="round"/>
+  <path d="m558 263-109 35-127-34m270-2 121-32 132-73" stroke="#e6b28e" stroke-width="27" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="579" cy="178" r="40" fill="#e6b28e"/>
+  <path d="M539 175c-4-60 84-59 83 0-33-4-45-23-49-27-8 17-21 25-34 27Z" fill="#172d2b"/>
+  <g stroke="#e9efe1" stroke-width="2"><path d="M75 74h62m-31-31v62M975 535h62m-31-31v62"/><path d="m72 561 108-108m-70 0h70v70"/></g>
+</svg>

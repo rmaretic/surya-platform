@@ -1,0 +1,170 @@
+[
+    {
+        "heading": "Registar studija",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/tenants",
+        "width": 375,
+        "key": "admin-register"
+    },
+    {
+        "heading": "Novi studio",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/tenants/create",
+        "width": 375,
+        "key": "admin-create"
+    },
+    {
+        "heading": "Lotus",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/tenants/1",
+        "width": 375,
+        "key": "admin-lotus"
+    },
+    {
+        "heading": "Balance",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/tenants/2",
+        "width": 375,
+        "key": "admin-balance"
+    },
+    {
+        "heading": "Sigurnost računa",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/settings/two-factor",
+        "width": 375,
+        "key": "platform-security"
+    },
+    {
+        "heading": "Potvrdite lozinku",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/user/confirm-password",
+        "width": 375,
+        "key": "platform-confirm-password"
+    },
+    {
+        "heading": "Registar studija",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/tenants?search=visual-qa-nepostojeci",
+        "width": 375,
+        "key": "admin-empty"
+    },
+    {
+        "heading": "Registar studija",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/tenants",
+        "width": 768,
+        "key": "admin-register"
+    },
+    {
+        "heading": "Novi studio",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/tenants/create",
+        "width": 768,
+        "key": "admin-create"
+    },
+    {
+        "heading": "Lotus",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/tenants/1",
+        "width": 768,
+        "key": "admin-lotus"
+    },
+    {
+        "heading": "Balance",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/tenants/2",
+        "width": 768,
+        "key": "admin-balance"
+    },
+    {
+        "heading": "Sigurnost računa",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/settings/two-factor",
+        "width": 768,
+        "key": "platform-security"
+    },
+    {
+        "heading": "Potvrdite lozinku",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/user/confirm-password",
+        "width": 768,
+        "key": "platform-confirm-password"
+    },
+    {
+        "heading": "Registar studija",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/tenants?search=visual-qa-nepostojeci",
+        "width": 768,
+        "key": "admin-empty"
+    },
+    {
+        "heading": "Registar studija",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/tenants",
+        "width": 1440,
+        "key": "admin-register"
+    },
+    {
+        "heading": "Novi studio",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/tenants/create",
+        "width": 1440,
+        "key": "admin-create"
+    },
+    {
+        "heading": "Lotus",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/tenants/1",
+        "width": 1440,
+        "key": "admin-lotus"
+    },
+    {
+        "heading": "Balance",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/tenants/2",
+        "width": 1440,
+        "key": "admin-balance"
+    },
+    {
+        "heading": "Sigurnost računa",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/settings/two-factor",
+        "width": 1440,
+        "key": "platform-security"
+    },
+    {
+        "heading": "Potvrdite lozinku",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/user/confirm-password",
+        "width": 1440,
+        "key": "platform-confirm-password"
+    },
+    {
+        "heading": "Registar studija",
+        "height": 900,
+        "overflow": false,
+        "url": "/platform/tenants?search=visual-qa-nepostojeci",
+        "width": 1440,
+        "key": "admin-empty"
+    }
+]

@@ -1,0 +1,249 @@
+{
+    "screens": [
+        {
+            "heading": " Prostor za vaš studio. ",
+            "height": 900,
+            "overflow": false,
+            "unlabelledInputs": 0,
+            "url": "http://lotus.yoga.test:8000/",
+            "width": 375,
+            "key": "lotus-home"
+        },
+        {
+            "heading": " Prostor za vaš studio. ",
+            "height": 900,
+            "overflow": false,
+            "unlabelledInputs": 0,
+            "url": "http://balance.yoga.test:8000/",
+            "width": 375,
+            "key": "balance-home"
+        },
+        {
+            "heading": " Prostor za vaš studio. ",
+            "height": 900,
+            "overflow": false,
+            "unlabelledInputs": 0,
+            "url": "http://platform.yoga.test:8000/",
+            "width": 375,
+            "key": "platform-home"
+        },
+        {
+            "heading": "Log in to your account",
+            "height": 900,
+            "overflow": false,
+            "unlabelledInputs": 1,
+            "url": "http://lotus.yoga.test:8000/login",
+            "width": 375,
+            "key": "studio-login"
+        },
+        {
+            "heading": "Create an account",
+            "height": 900,
+            "overflow": false,
+            "unlabelledInputs": 0,
+            "url": "http://lotus.yoga.test:8000/register",
+            "width": 375,
+            "key": "studio-register"
+        },
+        {
+            "heading": "Forgot password",
+            "height": 900,
+            "overflow": false,
+            "unlabelledInputs": 0,
+            "url": "http://lotus.yoga.test:8000/forgot-password",
+            "width": 375,
+            "key": "studio-forgot"
+        },
+        {
+            "heading": "Reset password",
+            "height": 900,
+            "overflow": false,
+            "unlabelledInputs": 0,
+            "url": "http://lotus.yoga.test:8000/reset-password/visual-qa-placeholder?email=visual-qa%40example.test",
+            "width": 375,
+            "key": "studio-reset"
+        },
+        {
+            "heading": "Email verification",
+            "height": 900,
+            "overflow": false,
+            "unlabelledInputs": 0,
+            "url": "http://platform.yoga.test:8000/platform/email/verify",
+            "width": 375,
+            "key": "platform-verify"
+        },
+        {
+            "heading": " Prostor za vaš studio. ",
+            "height": 900,
+            "overflow": false,
+            "url": "http://lotus.yoga.test:8000/",
+            "width": 768,
+            "key": "lotus-home"
+        },
+        {
+            "heading": " Prostor za vaš studio. ",
+            "height": 900,
+            "overflow": false,
+            "url": "http://balance.yoga.test:8000/",
+            "width": 768,
+            "key": "balance-home"
+        },
+        {
+            "heading": " Prostor za vaš studio. ",
+            "height": 900,
+            "overflow": false,
+            "url": "http://platform.yoga.test:8000/",
+            "width": 768,
+            "key": "platform-home"
+        },
+        {
+            "heading": "Log in to your account",
+            "height": 900,
+            "overflow": false,
+            "url": "http://lotus.yoga.test:8000/login",
+            "width": 768,
+            "key": "studio-login"
+        },
+        {
+            "heading": "Create an account",
+            "height": 900,
+            "overflow": false,
+            "url": "http://lotus.yoga.test:8000/register",
+            "width": 768,
+            "key": "studio-register"
+        },
+        {
+            "heading": "Forgot password",
+            "height": 900,
+            "overflow": false,
+            "url": "http://lotus.yoga.test:8000/forgot-password",
+            "width": 768,
+            "key": "studio-forgot"
+        },
+        {
+            "heading": "Reset password",
+            "height": 900,
+            "overflow": false,
+            "url": "http://lotus.yoga.test:8000/reset-password/visual-qa-placeholder?email=visual-qa%40example.test",
+            "width": 768,
+            "key": "studio-reset"
+        },
+        {
+            "heading": "Email verification",
+            "height": 900,
+            "overflow": false,
+            "url": "http://platform.yoga.test:8000/platform/email/verify",
+            "width": 768,
+            "key": "platform-verify"
+        },
+        {
+            "heading": " Prostor za vaš studio. ",
+            "height": 900,
+            "overflow": false,
+            "url": "http://lotus.yoga.test:8000/",
+            "width": 1440,
+            "key": "lotus-home"
+        },
+        {
+            "heading": " Prostor za vaš studio. ",
+            "height": 900,
+            "overflow": false,
+            "url": "http://balance.yoga.test:8000/",
+            "width": 1440,
+            "key": "balance-home"
+        },
+        {
+            "heading": " Prostor za vaš studio. ",
+            "height": 900,
+            "overflow": false,
+            "url": "http://platform.yoga.test:8000/",
+            "width": 1440,
+            "key": "platform-home"
+        },
+        {
+            "heading": "Log in to your account",
+            "height": 900,
+            "overflow": false,
+            "url": "http://lotus.yoga.test:8000/login",
+            "width": 1440,
+            "key": "studio-login"
+        },
+        {
+            "heading": "Create an account",
+            "height": 900,
+            "overflow": false,
+            "url": "http://lotus.yoga.test:8000/register",
+            "width": 1440,
+            "key": "studio-register"
+        },
+        {
+            "heading": "Forgot password",
+            "height": 900,
+            "overflow": false,
+            "url": "http://lotus.yoga.test:8000/forgot-password",
+            "width": 1440,
+            "key": "studio-forgot"
+        },
+        {
+            "heading": "Reset password",
+            "height": 900,
+            "overflow": false,
+            "url": "http://lotus.yoga.test:8000/reset-password/visual-qa-placeholder?email=visual-qa%40example.test",
+            "width": 1440,
+            "key": "studio-reset"
+        },
+        {
+            "heading": "Email verification",
+            "height": 900,
+            "overflow": false,
+            "url": "http://platform.yoga.test:8000/platform/email/verify",
+            "width": 1440,
+            "key": "platform-verify"
+        }
+    ],
+    "keyboard": [
+        {
+            "tag": "INPUT",
+            "id": "password",
+            "type": "password",
+            "aria": null
+        },
+        {
+            "tag": "BUTTON",
+            "id": "remember",
+            "type": "button",
+            "aria": "Remember me"
+        },
+        {
+            "tag": "BUTTON",
+            "id": "",
+            "type": "submit",
+            "aria": null
+        },
+        {
+            "tag": "A",
+            "id": "",
+            "type": null,
+            "aria": null
+        },
+        {
+            "tag": "A",
+            "id": "",
+            "type": null,
+            "aria": null
+        },
+        {
+            "tag": "A",
+            "id": "",
+            "type": null,
+            "aria": null
+        },
+        {
+            "tag": "BODY",
+            "id": "",
+            "type": null,
+            "aria": null
+        }
+    ],
+    "console": []
+}

@@ -1,0 +1,32 @@
+[
+    {
+        "overflow": false,
+        "page": "/account",
+        "width": 375
+    },
+    {
+        "overflow": false,
+        "page": "/account",
+        "width": 768
+    },
+    {
+        "overflow": false,
+        "page": "/account",
+        "width": 1440
+    },
+    {
+        "overflow": false,
+        "page": "/settings/two-factor",
+        "width": 375
+    },
+    {
+        "overflow": false,
+        "page": "/settings/two-factor",
+        "width": 768
+    },
+    {
+        "overflow": false,
+        "page": "/settings/two-factor",
+        "width": 1440
+    }
+]

@@ -1,0 +1,56 @@
+name: surya
+
+services:
+    mailpit:
+        image: axllent/mailpit:v1.31.3
+        ports:
+            - '127.0.0.1:18025:8025'
+            - '127.0.0.1:11025:1025'
+
+    mysql:
+        image: mysql:8.4.11
+        ports:
+            - '127.0.0.1:${DB_PORT:-13306}:3306'
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE:-surya}
+            MYSQL_USER: ${DB_USERNAME:-surya}
+            MYSQL_PASSWORD: ${DB_PASSWORD:-surya_local}
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-surya_root_local}
+        volumes:
+            - mysql-data:/var/lib/mysql
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    'MYSQL_PWD="$$MYSQL_PASSWORD" mysql --protocol=TCP -h 127.0.0.1 -u "$$MYSQL_USER" "$$MYSQL_DATABASE" -e "SELECT 1" > /dev/null 2>&1',
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 30
+            start_period: 30s
+
+    mysql-testing:
+        image: mysql:8.4.11
+        ports:
+            - '127.0.0.1:3308:3306'
+        environment:
+            MYSQL_DATABASE: surya_testing
+            MYSQL_USER: surya_testing
+            MYSQL_PASSWORD: surya_testing_local
+            MYSQL_ROOT_PASSWORD: surya_testing_root_local
+        volumes:
+            - mysql-testing-data:/var/lib/mysql
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    'MYSQL_PWD="$$MYSQL_PASSWORD" mysql --protocol=TCP -h 127.0.0.1 -u "$$MYSQL_USER" "$$MYSQL_DATABASE" -e "SELECT 1" > /dev/null 2>&1',
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 30
+            start_period: 30s
+
+volumes:
+    mysql-data:
+    mysql-testing-data:
