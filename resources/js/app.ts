@@ -11,7 +11,12 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 void createInertiaApp({
     pages: { path: './pages', lazy: true },
-    title: (title) => (title ? `${title} - ${appName}` : appName),
+    title: (title, page) =>
+        page.component.startsWith('sites/')
+            ? title
+            : title
+              ? `${title} - ${appName}`
+              : appName,
     layout: (name) => {
         switch (true) {
             case name === 'Welcome':

@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'public_indexing' => (bool) env('PUBLIC_INDEXING', false),
     'auth_scheme' => parse_url((string) env('APP_URL', 'http://platform.yoga.test:8000'), PHP_URL_SCHEME),
     'auth_port' => parse_url((string) env('APP_URL', 'http://platform.yoga.test:8000'), PHP_URL_PORT),
     'platform_domain' => env('PLATFORM_DOMAIN', 'platform.yoga.test'),

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\DesignRegistry;
 use App\Models\TenantProfile;
+use App\PublicStudioMetadata;
 use App\PublicStudioProfile;
 use App\TenantContext;
 use Illuminate\Support\Facades\Log;
@@ -47,6 +48,9 @@ class PublicStudioController extends Controller
             $profile?->address,
         );
 
-        return Inertia::render($component, ['profile' => $publicProfile->toArray()]);
+        return Inertia::render($component, [
+            'profile' => $publicProfile->toArray(),
+            'seo' => app(PublicStudioMetadata::class)->forPage($publicProfile, $page),
+        ]);
     }
 }

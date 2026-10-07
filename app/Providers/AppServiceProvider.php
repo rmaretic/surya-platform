@@ -7,9 +7,12 @@ use App\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Inertia\Ssr\SsrRenderFailed;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        Event::listen(SsrRenderFailed::class, function (SsrRenderFailed $event): void {
+            Log::warning('SSR rendering failed; using client rendering.', ['type' => $event->type->value]);
+        });
         Gate::define('studio-administration', [AdministrativeAccess::class, 'studio']);
         Gate::define('customer-portal', [AdministrativeAccess::class, 'portal']);
     }

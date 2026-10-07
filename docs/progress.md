@@ -530,3 +530,99 @@ raniji otvoreni admin pregledi nisu zatvoreni ovim zadatkom.
 
 Sljedeći korak: M1-11 — metadata/canonical/noindex, SSR izolacija i fallback.
 Za širu integracijsku provjeru pokrenuti `php artisan test --compact`.
+
+## M1-11 — SSR i granice hostova
+
+Datum: 7. listopada 2026. Status: dovršeno za opseg M1-11.
+
+- Zajednički javni metadata ugovor i Vue Head za oba Home/About dizajna:
+  hrvatski jezik dokumenta, tenant naslov bez naziva platforme, javni opis
+  ili neutralni HR fallback, canonical i robots. Blade fallback koristi isti
+  ugovor i upravljane oznake bez duplikata pri Inertia navigaciji.
+- Canonical dolazi iz aktivne verificirane primarne tenant domene i imenovane
+  rute; shema/port iz postojeće konfiguracije, u produkciji HTTPS. Ne koristi
+  ulazni port, forwarded zaglavlja ni query. Bez pouzdane primarne domene
+  dopušteni alias ostaje dostupan bez canonicala, uz noindex.
+- `PUBLIC_INDEXING=false` zadano; samo eksplicitno uključena produkcija na
+  primarnoj nedemo domeni može biti indexable. Alias, local/staging i `.test`
+  ostaju noindex. Nema novih ovisnosti, migracija ni izmjena razvojnih podataka.
+- Pad SSR-a daje client-rendered shell uz server metadata i sigurni Laravel
+  warning samo s kategorijom greške. README razlikuje Vite/built SSR transport,
+  dokumentira pokretanje, live testove i ograničenje fallbacka bez JavaScripta.
+
+Provjere:
+
+- `SSR_TEST_URL=http://127.0.0.1:13714` uz
+  `php artisan test --compact tests/Feature/PublicStudioSsrTest.php tests/Feature/PublicStudioTest.php tests/Feature/TenantResolutionTest.php`:
+  **53 prolazi, 522 assertiona**, zasebni MySQL i stvarni Node SSR.
+- Novi SEO/SSR testovi: 17; uključuju ignoriranje krivotvorenog origin inputa,
+  noindex uvjete, nevaljane primarne domene, fallback, sanitizirane logove,
+  šest Lotus → Balance → Lotus renderiranja i escaping javnog HTML sadržaja.
+  Bez `SSR_TEST_URL` dva live testa eksplicitno se preskaču.
+- Pint `--dirty --format agent`, PHPStan, Vue TypeScript, `npm run check:fix`
+  i client/SSR build prolaze. Vite izvan sandboxa zbog `spawn EPERM`; ranija
+  font/sourcemap upozorenja ostaju, bez nadogradnje paketa.
+- Chrome: četiri izravne SSR stranice, Home/About navigacija, ispravan HR
+  sadržaj i metadata, bez zabilježenih hydration warn/error poruka. Nakon
+  stvarnog gašenja Nodea rade client prikaz i navigacija bez duplih metadata.
+  [Detalji pregleda](vizualni-pregled-m1.md#m1-11--ssr-metadata-i-fallback-7-listopada-2026).
+
+Ograničenja: puna zbirka nije ponovno pokrenuta; raniji admin pregledi i
+Safari/Firefox ostaju otvoreni. Bez SSR-a i bez JavaScripta nema javnog body
+sadržaja, samo metadata; fallback nije zamjena za SSR SEO. Nema deploya.
+Privremeni QA procesi/router uklonjeni; postojeći dev procesi i `public/hot`
+sačuvani. Sljedeći korak: M1-12 — idempotentan demo seed i lokalne domene.
+Za širu integracijsku provjeru pokrenuti `php artisan test --compact`.
+
+## M1-12 — demo seed i lokalne domene
+
+Datum: 7. listopada 2026. Status: implementirano i provjereno na postojećoj
+lokalnoj instalaciji i praznoj testnoj MySQL bazi; proxy i puni svježi checkout
+ostaju neprovjereni.
+
+- Eksplicitni `LocalDemoSeeder` nadopunjuje osnovni seed: dva različita demo
+  profila, verificirane domene, owner/manager/instructor/customer u oba studija
+  i zaseban platform administrator. Customer email jednak je u oba studija,
+  lozinke različite. Kontakti/adrese jasno su demo, bez stvarnog telefona.
+- Dopušten samo `local`/`testing`, čak i uz `--force`. Novi računi imaju
+  verificiran email, ali owner/platform moraju proći stvarni TOTP enrolment.
+  Nema ugrađenih 2FA tajni, produkcijskih poziva niti slanja emailova.
+- Transakcija, normalizirani email lookup i tenant kontekst: ponavljanje čuva
+  postojeće lozinke, 2FA, deaktivaciju i uređena polja profila. Dopunjuju se
+  samo null demo polja. Konflikt domene ili uloge prekida cijeli seed;
+  kontekst se čisti i nakon iznimke. Zadani seeder ostaje prazan.
+- README: naredba nakon `composer setup`, svih devet demo pristupa, 2FA koraci,
+  hosts upute, dijagnostika i opcionalna Windows Nginx konfiguracija na 8080
+  prema istoj PHP aplikaciji na 8000. Nema novih paketa, migracija ni deploya.
+
+Izvršene provjere:
+
+- `php artisan test --compact tests/Feature/LocalDemoSeederTest.php`:
+  **11 prolazi, 109 assertiona** na odvojenom MySQL-u. Obuhvaćeni idempotentnost,
+  nadogradnja osnovnog seeda, očuvanje postojećih zapisa, produkcija/staging,
+  rollback i cleanup, javni payloadi, customer izolacija te stvarna prijava,
+  TOTP enrolment i dashboard oba ownera i platform administratora.
+- LocalDemoSeeder, TenantFoundation, TenantAuthentication i RoleAndTwoFactor:
+  **79 prolazi, 603 assertiona**. Pint `--dirty --format agent` i
+  `composer types:check` prolaze. Puna zbirka nije ponavljana.
+- `php artisan db:seed --class=LocalDemoSeeder --no-interaction` dvaput na
+  razvojnoj bazi: oba prolaza uspješna. Postojeći korisnikovi računi i studiji
+  sačuvani. Hosts zapis zatečen i pročitan, nije mijenjan. Stvarni HTTP zahtjevi
+  bez `--resolve`: obje naslovnice i platform login na portu 8000 vraćaju 200.
+- Chrome: Home/About obaju studija s novim demo profilima pregledani na 375 px,
+  bez horizontalnog overflowa, hrvatski sadržaj i različiti kontakti uredni.
+  Inertia navigacija radi; uzorak warn/error zapisa prazan. Viewport resetiran.
+- Pregled je otkrio zastarjeli `public/hot` prema ugašenom Viteu na 5174.
+  Pokrenut `npm run dev -- --port 5174 --strictPort`; nakon reloada prikazi rade.
+  Sandbox blokira Node spawn (EPERM), pokretanje izvan sandboxa uspješno.
+  Vite ostavljen pokrenut za nastavak lokalnog rada. Drugi procesi nisu gašeni.
+
+Ograničenja: Nginx nije dostupan u PATH-u, pa dokumentirani opcionalni proxy
+nije pokrenut niti je izvršen `nginx -t`. Nije dodana nova sistemska ovisnost.
+Nema novog client/SSR builda jer frontend kod nije mijenjan; browser koristi
+Vite. Admin enrolment potvrđen je automatiziranim HTTP testovima, bez promjene
+2FA postojećih browser računa. Raniji otvoreni vizualni prihvati ostaju otvoreni.
+
+Sljedeći konkretan korak: M1-13 — integracijska provjera i CI, uključujući
+svježi checkout; prije zatvaranja proxy provjere pripremiti zasebni lokalni
+Nginx prema README-u. Za cijelu zbirku pokrenuti `php artisan test --compact`.

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"  @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html lang="{{ isset($page['props']['seo']) ? 'hr' : str_replace('_', '-', app()->getLocale()) }}"  @class(['dark' => ($appearance ?? 'system') == 'dark'])>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -38,7 +38,16 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
         <x-inertia::head>
-            <title>{{ config('app.name', 'Laravel') }}</title>
+            @if (isset($page['props']['seo']))
+                <title data-inertia>{{ $page['props']['seo']['title'] }}</title>
+                <meta data-inertia="description" name="description" content="{{ $page['props']['seo']['description'] }}">
+                <meta data-inertia="robots" name="robots" content="{{ $page['props']['seo']['robots'] }}">
+                @if ($page['props']['seo']['canonical'])
+                    <link data-inertia="canonical" rel="canonical" href="{{ $page['props']['seo']['canonical'] }}">
+                @endif
+            @else
+                <title>{{ config('app.name', 'Laravel') }}</title>
+            @endif
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">

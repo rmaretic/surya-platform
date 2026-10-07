@@ -1,15 +1,19 @@
-﻿<script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+<script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
 import BalanceLayout from '@/layouts/sites/BalanceLayout.vue';
 import PublicStudioContact from '@/components/PublicStudioContact.vue';
-import type { PublicStudioProfile } from '@/types/public-studio';
+import PublicStudioHead from '@/components/PublicStudioHead.vue';
+import type {
+    PublicStudioMetadata,
+    PublicStudioProfile,
+} from '@/types/public-studio';
 import { login } from '@/routes';
 import movement from './movement.svg';
-defineProps<{ profile: PublicStudioProfile }>();
+defineProps<{ profile: PublicStudioProfile; seo: PublicStudioMetadata }>();
 </script>
 <template>
     <BalanceLayout :name="profile.name" current="about">
-        <Head :title="'O studiju — ' + profile.name" />
+        <PublicStudioHead :seo="seo" />
         <section class="balance-section about">
             <div class="about-heading">
                 <p class="balance-eyebrow">O studiju / iznutra prema van</p>

@@ -285,3 +285,30 @@ nisu spremljeni u bazu. Dugi email i višeredna adresa ne stvaraju overflow.
 Nije provjeren fizički slabiji mobitel niti Safari/Firefox. Prethodno otvoreni
 admin/auth scenariji iz M1-05–M1-08 ostaju otvoreni. QA nije mijenjao račune,
 profil studija, sigurnosne postavke ni postojeće razvojne procese.
+
+## M1-11 — SSR, metadata i fallback (7. listopada 2026.)
+
+Status: prihvat M1-11 provjeren. Povezani Chrome, izgrađeni client/SSR,
+privremeni PHP na 8010 i isti Node proces na 13714; postojeći Vite `public/hot`
+sačuvan. Razvojni profili i računi nisu mijenjani.
+
+- Izravno otvorene sve četiri Home/About stranice: vidljiv HR sadržaj,
+  `lang=hr`, tenant naslov bez platformskog sufiksa, description, noindex i
+  canonical na pripadajuću primarnu domenu. Canonical zadržava konfigurirani
+  port 8000 iako je pregled izvršen na 8010.
+- Lotus → Balance → Lotus kroz isti SSR proces: ispravan sadržaj i dizajn,
+  `data-server-rendered=true`; uzorci browser warn/error logova prazni.
+- Home → About Inertia navigacija oba dizajna mijenja naslov i canonical;
+  nema duplih title/description/canonical oznaka. Izravni About reload
+  također nema zabilježenih hydration grešaka.
+- Nakon gašenja vlastitog Node procesa, Lotus Home i Balance About ostaju
+  vidljivi kroz client rendering, bez `data-server-rendered` oznake i bez
+  browser warn/error zapisa. Lotus Home → About navigacija radi i metadata
+  ostaje neduplicirana. Laravel bilježi samo `type=connection` warning.
+- Automatizirani live testovi dodatno parsiraju stvarni početni HTML bez
+  JavaScripta, provjeravaju javni tekst u `#app`, šest uzastopnih renderiranja,
+  tenant metadata/dizajn i escaping naslova/opisa s HTML oznakama.
+
+Nisu ponavljani svi responsive/reduced-motion scenariji iz M1-10 jer layout i
+animacije nisu mijenjani. Safari/Firefox i raniji otvoreni admin pregledi
+ostaju izvan ove provjere. Nema produkcijskog deploya.

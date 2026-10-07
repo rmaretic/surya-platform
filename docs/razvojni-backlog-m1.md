@@ -166,6 +166,10 @@ Svaki ima naslovnicu, kratku stranicu o studiju i pristup prijavi. Hero, predsta
 
 **Ovisnosti:** M1-10. **Veza:** AC02, dio AC29.
 
+**Status (7. listopada 2026.):** implementirano i provjereno za opseg M1-11.
+[Implementacija i provjere](progress.md#m1-11--ssr-i-granice-hostova),
+[browser pregled](vizualni-pregled-m1.md#m1-11--ssr-metadata-i-fallback-7-listopada-2026).
+
 Uključiti SSR naslovnice i About stranice s tenant nazivom, title/description i canonical URL-om iz verificirane konfiguracije, nikada neprovjerenog Host zaglavlja. Držati browser-only animacije izvan SSR izvođenja. Razvojne/demo domene označiti noindex. Kad SSR proces nije dostupan, aplikacija treba imati dokumentirani client-rendered fallback i log greške bez curenja podataka.
 
 **Prihvat:** početni HTML bez izvršavanja JavaScripta sadrži odgovarajući javni tekst studija. Lotus → Balance → Lotus zahtjevi kroz isti SSR proces ne miješaju props, metadata ni dizajn. Hydration nema grešaka. HR sadržaj obvezan; puni prijevodi nisu M1.
@@ -173,6 +177,12 @@ Uključiti SSR naslovnice i About stranice s tenant nazivom, title/description i
 ## M1-12 — demo seed i lokalne domene
 
 **Ovisnosti:** M1-11. **Veza:** odjeljci 22, 29.
+
+**Status (7. listopada 2026.):** demo seed i izravni lokalni pristup implementirani
+i provjereni. [Pristupni podaci i setup](../README.md#demo-seed-i-lokalne-domene--m1-12),
+[testovi](../tests/Feature/LocalDemoSeederTest.php), [rezultati](progress.md#m1-12--demo-seed-i-lokalne-domene).
+Opcionalni Nginx reverse proxy dokumentiran je, ali nije izvršno provjeren;
+potpuni prolaz svježeg checkouta ostaje za M1-13.
 
 Pripremiti idempotentan lokalni seeder za dva studija, njihove verificirane demo domene, različite profile/dizajne i sve uloge. U oba studija dodati customer s istim emailom i različitim lozinkama radi provjere izolacije. Dodati dokumentirane lokalne pristupne podatke koji nikada nisu produkcijski; seed mora odbiti produkcijsko okruženje.
 

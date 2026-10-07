@@ -5,3 +5,10 @@ export type PublicStudioProfile = {
     phone: string | null;
     address: string | null;
 };
+
+export type PublicStudioMetadata = {
+    title: string;
+    description: string;
+    canonical: string | null;
+    robots: string;
+};

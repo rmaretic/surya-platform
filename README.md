@@ -1,7 +1,7 @@
 # Surya
 
 Laravel + Vue + Inertia platforma za yoga studije. Trenutačni inkrement je
-M1-10: dva različita javna dizajna, lokalne ilustracije i pristupačne animacije.
+M1-12: lokalni demo seed, pristupni podaci i postavljanje lokalnih domena.
 Studio administracija, javni profil i osoblje implementirani su u M1-08;
 njihov potpuni vizualni prihvat još je otvoren.
 
@@ -31,6 +31,7 @@ Pokreni Docker Desktop, zatim iz korijena svježeg checkouta:
 
 ```powershell
 composer setup
+php artisan db:seed --class=LocalDemoSeeder --no-interaction
 composer dev
 ```
 
@@ -319,8 +320,9 @@ php artisan platform:create-admin operator@example.test --name="Lokalni administ
 
 Naredba traži lozinku i potvrdu skrivenim unosom; lozinka nije argument naredbe.
 Zahtijeva najmanje 12 znakova, velika i mala slova, broj i simbol. Nakon prijave
-zatraži verifikacijski email i otvori ga u Mailpitu. Nije unaprijed kreiran
-razvojni admin ni zajednička lozinka. Za stvarni račun koristi vlastiti email.
+zatraži verifikacijski email i otvori ga u Mailpitu. Bez eksplicitnog demo seeda
+nije unaprijed kreiran razvojni admin. M1-12 ispod dokumentira demo račun;
+za stvarni račun koristi vlastiti email.
 Amazon SES i druge produkcijske integracije nisu dio ovog inkrementa.
 
 Nakon ažuriranja lokalnog `.env` ponovno pokreni `composer dev` da procesi
@@ -665,6 +667,215 @@ razlikuju stvarno prazne razvojne profile od označenih browser demo podataka.
 Razvojna baza nije mijenjana. Cijela testna zbirka nije ponovno izvršena;
 pokreni `php artisan test --compact` za širu integracijsku provjeru.
 Sljedeći zadatak je M1-11 (SEO/SSR i granice hostova).
+
+## SSR, SEO i granice hostova — M1-11
+
+Javne Home/About stranice imaju hrvatski `lang`, naslov studija, description,
+canonical i robots oznaku. Naslov javnog studija ne dodaje naziv platforme.
+Opis koristi javni kratki opis, a kad je prazan, neutralni hrvatski tekst.
+Metadata se ažurira i pri Inertia navigaciji; fallback ne stvara duple oznake.
+
+Canonical koristi isključivo aktivnu verificiranu primarnu domenu trenutnog
+studija i imenovanu rutu. Shema i port dolaze iz `APP_URL` kroz postojeću
+`tenancy.auth_scheme/auth_port` konfiguraciju; produkcija koristi HTTPS.
+Ulazni Host, forwarded zaglavlja, port i query ne određuju canonical.
+Verificirani alias vodi na canonical primarne domene. Ako primarna domena
+nedostaje, nije aktivna ili verificirana, stranica ostaje dostupna na dopuštenom
+aliasu, bez canonicala i uz noindex; nema fallbacka na tuđi studio.
+
+`PUBLIC_INDEXING=false` je zadana vrijednost. Indeksiranje traži istodobno
+`APP_ENV=production`, `PUBLIC_INDEXING=true` i zahtjev na primarnoj domeni.
+Lokalno/staging okruženje, aliasi i rezervirane demo domene poput `.test`
+ostaju `noindex, nofollow`. M1 ne dodaje prijevode, hreflang, sitemap ni Open Graph.
+
+### Pokretanje i provjera SSR-a
+
+Uz `npm run dev` Inertia 3 koristi Vite SSR. Za provjeru izgrađene verzije:
+
+```powershell
+npm run build
+node bootstrap/ssr/app.js
+```
+
+Node ostavi u zasebnom terminalu; standardni port je 13714. Ako već postoji
+SSR proces, koristi njega ili ga restartaj nakon builda, bez pokretanja drugog
+na istom portu. `php artisan inertia:check-ssr --no-interaction` provjerava
+aktivni SSR transport; uz postojeći `public/hot` to je Vite, inače Node.
+
+Testovi koriste zasebnu MySQL bazu i ne mijenjaju razvojne profile. Live SSR
+testovi izričito zanemaruju `public/hot` i koriste zadani URL istog Node procesa:
+
+```powershell
+$env:SSR_TEST_URL = 'http://127.0.0.1:13714'
+php artisan test --compact tests/Feature/PublicStudioSsrTest.php tests/Feature/PublicStudioTest.php tests/Feature/TenantResolutionTest.php
+Remove-Item Env:SSR_TEST_URL
+php vendor/bin/pint --dirty --format agent
+composer types:check
+npm run types:check
+npm run check
+```
+
+Bez `SSR_TEST_URL` dva testa stvarnog Node renderiranja eksplicitno se preskaču;
+ostali SEO/fallback testovi rade bez SSR procesa. Live testovi provjeravaju
+početni HTML, javni tekst u DOM-u bez izvršavanja JavaScripta, zasebne metadata
+oznake i dizajne u Lotus → Balance → Lotus slijedu te escaping javnog sadržaja.
+Za širu integracijsku provjeru pokreni `php artisan test --compact`.
+
+### Ponašanje pri nedostupnom SSR-u
+
+Inertia zadržava HTTP 200 i šalje client-rendered shell. Naslov, description,
+canonical i noindex ostaju u početnom HTML-u, a Vue prikazuje sadržaj nakon
+učitavanja JavaScripta. Bez JavaScripta u tom stanju nema javnog sadržaja:
+fallback održava upotrebljivost, ali ne zamjenjuje ispravan SSR za SEO.
+Laravel warning `SSR rendering failed; using client rendering.` sadrži samo
+enum kategoriju greške, bez URL-a, propsa, stacka ili sadržaja iznimke.
+Ne uključivati `inertia.ssr.throw_on_error` za redovni rad; live testovi ga
+uključuju kako ne bi prihvatili fallback kao uspješan SSR.
+
+Za ručno ponavljanje koristi izgrađene assete bez aktivnog Vite hot transporta,
+otvori Home/About obaju studija, zatim zaustavi vlastiti Node proces s Ctrl+C
+i osvježi stranicu. Provjeri vidljivi sadržaj, navigaciju, jednu canonical oznaku
+i sanitizirani warning u Laravel logu. Ponovno pokreni Node nakon provjere.
+Ako `public/hot` postoji, gašenje zasebnog Node procesa ne simulira pad Vite SSR-a.
+
+## Demo seed i lokalne domene — M1-12
+
+Nakon `composer setup` pokreni eksplicitni demo seed iz prvog poglavlja.
+Za postojeću instalaciju s primijenjenim migracijama dovoljno je:
+
+```powershell
+php artisan db:seed --class=LocalDemoSeeder --no-interaction
+```
+
+Seed dopušta samo `local` i `testing`; `--force` ne zaobilazi zabranu produkcije
+ili staginga. Zadani `DatabaseSeeder` ostaje prazan, a `LocalFoundationSeeder`
+i dalje stvara samo osnovne studije. Demo seed ga nadopunjuje u jednoj transakciji.
+Ne šalje emailove. Lotus i Balance imaju različite opise, dizajne i jasno
+označene demo adrese te emailove pod rezerviranom domenom `example.test`.
+Telefon ostaje prazan kako demo ne bi povezao stvarnu osobu.
+
+Pristupni podaci **isključivo za lokalni demo**, nikada za produkciju:
+
+| Domena             | Uloga          | Email                           | Početna lozinka       |
+| ------------------ | -------------- | ------------------------------- | --------------------- |
+| platform.yoga.test | Platform admin | platform@example.test           | `Platform-Demo-2026!` |
+| lotus.yoga.test    | Owner          | owner.lotus@example.test        | `Lotus-Demo-2026!`    |
+| lotus.yoga.test    | Manager        | manager.lotus@example.test      | `Lotus-Demo-2026!`    |
+| lotus.yoga.test    | Instructor     | instructor.lotus@example.test   | `Lotus-Demo-2026!`    |
+| lotus.yoga.test    | Customer       | customer@example.test           | `Lotus-Demo-2026!`    |
+| balance.yoga.test  | Owner          | owner.balance@example.test      | `Balance-Demo-2026!`  |
+| balance.yoga.test  | Manager        | manager.balance@example.test    | `Balance-Demo-2026!`  |
+| balance.yoga.test  | Instructor     | instructor.balance@example.test | `Balance-Demo-2026!`  |
+| balance.yoga.test  | Customer       | customer@example.test           | `Balance-Demo-2026!`  |
+
+Studio prijava je `/login`, platform prijava `/platform/login`. Novi demo računi
+imaju verificiran email. Owner i platform admin nakon prijave moraju potvrditi
+lozinku, uključiti 2FA, skenirati QR vlastitim autentikatorom i potvrditi TOTP.
+Spremi recovery kodove privatno. Tek tada su dostupni `/dashboard` odnosno
+`/platform/dashboard`; seed ne uključuje poznatu TOTP tajnu niti zaobilazi 2FA.
+Manager/instructor imaju ograničeni dashboard, customer vlastiti `/account`.
+
+Ponovljeni seed ne duplicira zapise i ne resetira lozinke, 2FA, verifikaciju
+emaila, deaktivaciju ni uređene profile. U profilu dopunjuje samo `null` demo
+polja; namjerno prazni string ostaje prazan. Postojeći osnovni seed može se
+nadograditi bez brisanja podataka. Početna lozinka vrijedi samo za novostvoreni
+račun; za ranije promijenjenu lozinku koristi postojeći reset kroz Mailpit.
+Konflikt uloge demo emaila ili promijenjena konfiguracija studija/domene prekida
+cijeli seed bez djelomičnih upisa. Provjeri postojeći zapis u administraciji;
+nemoj brisati bazu niti vraćati tuđu ulogu radi prolaska seeda.
+
+### Hosts i izravni razvojni pristup
+
+U Windowsu otvori Notepad preko **Run as administrator**, zatim otvori
+`C:\Windows\System32\drivers\etc\hosts` uz filter **All files**. Sačuvaj postojeće
+retke i dodaj ovaj samo ako iste domene već nisu ispravno mapirane:
+
+```text
+127.0.0.1 platform.yoga.test lotus.yoga.test balance.yoga.test
+```
+
+Spremi datoteku bez nastavka `.txt`. `ipconfig /flushdns` osvježava DNS cache.
+Hosts zapis ne postavlja port: uz standardni `composer dev` koristi port 8000
+na sve tri domene i zadrži `APP_URL=http://platform.yoga.test:8000`.
+Nema tri instalacije ni tri baze. Ako dobiješ 404, provjeri seed, hostname i
+status domene; ako je veza odbijena, provjeri PHP proces i port.
+
+### Lokalni reverse proxy prema istoj aplikaciji
+
+Za lokalni prikaz preko porta 8080 može se koristiti zasebna Windows Nginx
+instanca. Nginx nije Composer/npm ovisnost niti ga `composer setup` instalira.
+Preduvjet je raspakiran [službeni Windows Nginx](https://nginx.org/en/docs/windows.html)
+i slobodan port 8080. Ne prepisuj konfiguraciju postojećih projekata: ovaj primjer
+stavi kao `conf/surya-local.conf` u zasebnoj Nginx instanci.
+
+```nginx
+worker_processes 1;
+events { worker_connections 128; }
+http {
+    server {
+        listen 127.0.0.1:8080 default_server;
+        server_name _;
+        return 404;
+    }
+    server {
+        listen 127.0.0.1:8080;
+        server_name platform.yoga.test lotus.yoga.test balance.yoga.test;
+        location / {
+            proxy_pass http://127.0.0.1:8000;
+            proxy_set_header Host $http_host;
+            proxy_set_header Forwarded "";
+            proxy_set_header X-Forwarded-For "";
+            proxy_set_header X-Forwarded-Host "";
+            proxy_set_header X-Forwarded-Port "";
+            proxy_set_header X-Forwarded-Proto "";
+        }
+    }
+}
+```
+
+Zadržavanje [Host zaglavlja](https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_set_header)
+omogućuje Laravelu razriješiti studio. Proxy ne mijenja shemu i uklanja forwarded
+zaglavlja; `TRUSTED_PROXIES` ostaje prazan. Ne postavljati wildcard povjerenje.
+U lokalnom `.env` postavi `APP_URL=http://platform.yoga.test:8080`, ostavi
+`PLATFORM_DOMAIN=platform.yoga.test`, `PUBLIC_INDEXING=false` i host-only cookie.
+Očisti konfiguraciju i restartaj `composer dev`. PHP i dalje sluša na 8000;
+browser koristi 8080. Vite ostaje izravno dostupan na 5173 za assete/HMR.
+
+Iz korijena raspakirane zasebne Nginx instance:
+
+```powershell
+.\nginx.exe -t -c conf/surya-local.conf
+Start-Process -FilePath .\nginx.exe -ArgumentList '-c', 'conf/surya-local.conf' -WindowStyle Hidden
+```
+
+Nakon izmjena prvo ponovi `-t`, zatim `.\nginx.exe -s reload -c conf/surya-local.conf`.
+Za gašenje te instance: `.\nginx.exe -s quit -c conf/surya-local.conf`.
+To je lokalni HTTP primjer bez certifikata; produkcijski DNS/Nginx/TLS nije M1-12.
+Za povratak na izravni pristup vrati `APP_URL` na port 8000 i restartaj procese.
+
+### Ponovljiva provjera
+
+```powershell
+php artisan db:seed --class=LocalDemoSeeder --no-interaction
+php artisan db:seed --class=LocalDemoSeeder --no-interaction
+php artisan test --compact tests/Feature/LocalDemoSeederTest.php tests/Feature/TenantFoundationTest.php tests/Feature/TenantAuthenticationTest.php tests/Feature/RoleAndTwoFactorTest.php
+```
+
+Na odabranom portu otvori naslovnice i About obaju studija, platform prijavu,
+zatim owner i platform admin prijavu s vlastitim TOTP enrolmentom. Provjeri
+da Lotus customer lozinka ne radi na Balanceu, a Balance lozinka radi za isti
+email. Za provjeru proxy routinga bez izmjene hosts datoteke:
+
+```powershell
+curl.exe --noproxy "*" --resolve lotus.yoga.test:8080:127.0.0.1 -I http://lotus.yoga.test:8080/
+curl.exe --noproxy "*" --resolve balance.yoga.test:8080:127.0.0.1 -I http://balance.yoga.test:8080/
+curl.exe --noproxy "*" --resolve platform.yoga.test:8080:127.0.0.1 -I http://platform.yoga.test:8080/platform/login
+```
+
+Očekuje se 200 za sva tri zahtjeva; ta provjera ne potvrđuje Windows hosts
+mapiranje. Njega provjeri browserom bez `--resolve`. Stvarno izvršene provjere
+i ograničenja zabilježeni su u [napretku M1-12](docs/progress.md#m1-12--demo-seed-i-lokalne-domene).
+Za cijelu zbirku pokreni `php artisan test --compact`.
 
 ## Projektne upute
 

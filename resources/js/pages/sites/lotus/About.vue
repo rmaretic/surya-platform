@@ -1,15 +1,19 @@
-﻿<script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+<script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
 import LotusLayout from '@/layouts/sites/LotusLayout.vue';
 import PublicStudioContact from '@/components/PublicStudioContact.vue';
-import type { PublicStudioProfile } from '@/types/public-studio';
+import PublicStudioHead from '@/components/PublicStudioHead.vue';
+import type {
+    PublicStudioMetadata,
+    PublicStudioProfile,
+} from '@/types/public-studio';
 import { login } from '@/routes';
 import stillness from './stillness.svg';
-defineProps<{ profile: PublicStudioProfile }>();
+defineProps<{ profile: PublicStudioProfile; seo: PublicStudioMetadata }>();
 </script>
 <template>
     <LotusLayout :name="profile.name" current="about">
-        <Head :title="'O studiju — ' + profile.name" />
+        <PublicStudioHead :seo="seo" />
         <section class="lotus-section about">
             <div class="about-title">
                 <p class="lotus-eyebrow">O studiju</p>
