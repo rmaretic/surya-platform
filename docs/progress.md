@@ -780,3 +780,25 @@ Sljedeći konkretan korak: ponoviti README demo i zabilježiti stvarne rezultate
 zatim zatvoriti svježi setup, CI i otvorene admin/auth prihvate iz backloga.
 Za punu lokalnu regresiju pokrenuti `php artisan test --compact`; za živi SSR
 slijediti M1-13 postupak s Node procesom i `SSR_TEST_URL`.
+
+## M1-10 — dopuna sadržaja Lotus naslovnice (8. listopada 2026.)
+
+Status: dovršena sadržajna dopuna prema zasebnom zahtjevu korisnika.
+
+- Dodani premium slogani, priča o prostoru i učiteljima, opisi Hatha,
+  Vinyasa i Yin prakse te informacije za prvi dolazak. Izmišljeni sadržaj
+  označen je kao demo; postojeći javni profil i kontakti ostaju dinamički.
+- Ponovno korištene postojeće sekcije i stilovi, bez novih ovisnosti,
+  rezervacijskih kontrola ili izmjena baze.
+- `npm run build`: client i SSR prolaze, uz postojeća upozorenja za
+  opcionalni Fontaine i Inertia sourcemape. Sandbox je prvo blokirao
+  podprocese (`EPERM`); ponavljanje izvan sandboxa uspjelo je.
+- `npm run types:check`, formatiranje izmijenjene Vue datoteke i
+  `git diff --check` prolaze. Browser: nova naslovnica vizualno pregledana
+  na 375 i 1440 px, hero dodatno na 768 px; sve tri širine bez
+  horizontalnog overflowa.
+- PHP testovi nisu pokretani: promjena je isključivo sadržajna. Živi SSR
+  proces nije zasebno provjeren; SSR build jest.
+
+Sljedeći korak: zasebno razraditi vizualni dizajn naslovnice prema korisnikovom
+smjeru. Otvoreni prihvati ostatka M1 ostaju nepromijenjeni.
