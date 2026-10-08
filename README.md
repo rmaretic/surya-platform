@@ -634,7 +634,8 @@ Enterom, stvarni SSR HTML i učitavanje samo pripadajućeg CSS-a dizajna.
 
 ## Javni demo dizajni — M1-10
 
-Lotus koristi toplu editorial kompoziciju, serifne naslove i organsku ilustraciju;
+Lotus naslovnica koristi toplu editorial kompoziciju, serifne naslove i
+fotografski pejzaž s neovisnim botaničkim slojevima;
 Balance tamnu podlogu, geometrijsku ilustraciju i široke sekcije. Oba imaju
 naslovnicu, stranicu o studiju, javni kontakt ako je popunjen i poveznice na
 postojeću prijavu. Naziv, opis i kontakt dolaze iz javnog DTO-a; nema izmišljenog
@@ -646,7 +647,19 @@ pripadajuće stranice u `resources/js/pages/sites`. Izrađene su za ovaj projekt
 i označene CC0-1.0; ne sadrže fotografije, vanjske resurse ni prikaze stvarnih
 prostora/osoba. Svaka je manja od 2 KB i učitava se samo uz svoj dizajn.
 
-Zajednički `usePublicMotion` pokreće kratko otkrivanje vidljivih sekcija i
+Lotus naslovnica ima vlastiti `useLotusScene`, scoped `lotus-home.css` i tri
+lokalna WebP asseta u `resources/js/pages/sites/lotus/assets` (zajedno oko
+680 KB). Pejzaž i praksa generirani su kroz Kie.ai; pejzaž je očišćen od
+neželjenog teksta, a prozirni botanički sloj izrađen kroz imagegen. To su AI
+vizualizacije demo studija, ne fotografije stvarnog prostora ili tima.
+Hero otvara botanički okvir pri prirodnom scrollu, kartice praksi se preklapaju,
+tekst se postupno naglašava i kružnice reagiraju na prolazak kroz sekciju.
+`onMounted` inicijalizira efekte; `onUnmounted` uklanja listenere, observer,
+zakazani frame i animacije. Bez JavaScripta uz SSR ostaje potpuna statična
+stranica; reduced-motion uklanja dodatni sticky raspon i animacije, uključujući
+promjenu postavke dok je stranica otvorena. FAQ koristi izvorni `details`.
+
+Lotus About i Balance zadržavaju zajednički `usePublicMotion` za kratko otkrivanje vidljivih sekcija i
 dekorativni parallax do 18 px na širinama od 768 px. Sadržaj je vidljiv prije
 inicijalizacije, a reduced-motion isključuje oba efekta. Promjena postavke
 djeluje odmah; unmount uklanja listenere, observer, frame i aktivne animacije.

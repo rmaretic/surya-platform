@@ -1,1 +1,12 @@
 [    6410ms] [LOG] [Framer On-Page Editing] Unavailable because not on a `framer.app` subdomain and access status is no-auth @ https://app.framerstatic.com/editorbar.3SOEGFT3.mjs:0
+[  195839ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://[::1]:5173/__laravel_vite_plugin__/fonts/bb914b6d0b7ee244.woff2:0
+[  195839ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://[::1]:5173/__laravel_vite_plugin__/fonts/324accb0a4e3a327.woff2:0
+[  195839ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://[::1]:5173/__laravel_vite_plugin__/fonts/9308f33532b1b032.woff2:0
+[  195840ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://[::1]:5173/resources/css/app.css:0
+[  195858ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://lotus.yoga.test:8000/_boost/browser-logs @ http://lotus.yoga.test:8000/:113
+[  195863ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://[::1]:5173/@vite/client:0
+[  195863ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://[::1]:5173/resources/js/app.ts:0
+[  195863ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://[::1]:5173/resources/js/pages/sites/lotus/Home.vue:0
+[ 1082650ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://lotus.yoga.test:8000/_boost/browser-logs @ http://lotus.yoga.test:8000/:113
+[ 1338532ms] [ERROR] Failed to load resource: the server responded with a status of 409 (Conflict) @ http://lotus.yoga.test:8000/about:0
+[ 1339053ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://lotus.yoga.test:8000/_boost/browser-logs @ http://lotus.yoga.test:8000/about:113
