@@ -1,5 +1,10 @@
 # Napredak
 
+Aktualni pregled: [prihvat svih M1 zadataka](razvojni-backlog-m1.md#pregled-prihvata--8-listopada-2026)
+i [predaja M1-14](#m1-14--demonstracija-i-predaja). Zapisi ispod su datirani
+rezultati pojedinih inkremenata; ranije navedene buduće funkcionalnosti i
+blokade nisu nužno aktualno stanje.
+
 ## M1-01 — repozitorij i lokalno pokretanje
 
 Datum: 4. listopada 2026.
@@ -688,3 +693,90 @@ Sljedeći korak: potvrditi izmijenjeni workflow na GitHubu, zatim M1-14 —
 demonstracija i predaja uz eksplicitan popis preostalih prihvatnih stavki.
 Punu lokalnu zbirku moguće je ponoviti s `php artisan test --compact`;
 za oba live SSR testa zadržati pokrenut Node i postaviti `SSR_TEST_URL`.
+
+### M1-13 — dijagnostika autoloadera, 8. listopada 2026.
+
+- Postojeći projekt: optimizirani autoloader bez skripti/pluginova prolazi
+  za 11,9 s; s pluginom bez skripti za 6,1 s; puni
+  `composer dump-autoload --optimize --profile`, uključujući Laravel
+  `package:discover`, za 6,7 s. Razlika vremena uključuje zagrijavanje cachea.
+- Čista kopija `git archive HEAD` u `storage/framework/testing/autoload-qa`:
+  `composer install --no-interaction --prefer-dist --profile` uspješan za
+  **43,9 s**, 154 paketa iz postojećeg lockfilea. Generiranje optimiziranog
+  autoloadera i package discovery prolaze bez promjene ovisnosti/configa.
+- Ista instalacija kopirana u novu `%TEMP%` mapu reproducira usporenje.
+  Privremeno praćenje Composer skeniranja pokazuje napredovanje kroz pakete,
+  a ne zastoj na jednom razredu. Jednaki uzorak 174 PHP datoteke, 746111 bajtova:
+  čitanje na D: **0,132 s**, u `%TEMP%` **9,829 s**; enumeracija 0,030/0,320 s.
+  Dokazana je razlika pristupa datotekama po lokaciji, ne točan OS uzrok.
+  Antivirus nije potvrđen kao uzrok i njegove postavke nisu mijenjane.
+- Praktično rješenje: projekt i čiste instalacije držati pod radnim
+  direktorijem na D:. Nisu mijenjani Composer/PHP, lockfileovi ni aplikacijski
+  kod. Nije brisan postojeći `vendor`, cache ni razvojna baza. PSR-4 upozorenje
+  za testni `TenantIsolationProbeJob` nije uzrok usporenja; uspješni dump ga
+  također ispisuje. Sporo TEMP skeniranje prekinuto nakon prikupljanja dokaza.
+- README dopunjen uputama za GitHub Actions i dijagnostiku. Git stanje na
+  početku čisto, HEAD `41d04f2` (`Add github actions`). Nije potvrđen status
+  udaljenog izvršavanja; GitHub CLI nije dostupan. Korisnik provjerava workflow
+  `tests`, posao `ci`, osobito `Setup Application` i `Run CI Checks`.
+
+Čista Composer instalacija sada je potvrđena. Cijeli setup s novom bazom,
+frontendom i demonstracijom nije ponovljen ovom dijagnostikom; raniji rezultat
+testova ostaje rezultat 7. listopada, bez tvrdnje o novom testnom prolazu.
+Privremene kopije i instrumentacija uklonjene nakon provjere.
+Sljedeće: potvrditi uspješan GitHub run odgovarajućeg commita i zatvoriti
+preostali prihvat svježeg setupa.
+
+## M1-14 — demonstracija i predaja
+
+Datum: 8. listopada 2026. Status: dokumentacija predaje isporučena;
+cijeli ručni demo i potpuni prihvat milestonea ostaju otvoreni.
+
+- README dopunjen pripremom i osam koraka demonstracije: platform registar,
+  dva dizajna/domene, owner objava kontakta, nepromijenjeni Balance, zabrana
+  manageru, isti email u odvojenim računima, odbijanje stranog podatka i
+  vraćanje izvornog kontakta. Svaki korak ima očekivani rezultat.
+- Sigurnosni dio upućuje na postojeće testove s konkretnim filterima.
+  Testni profile endpoint jasno je odvojen od stvarnih demo ruta; postojeći
+  test osoblja dodatno provjerava stvarnu aplikacijsku rutu.
+- Povezani setup, migracije/seed, lokalni inbox, SSR, testovi, matrica prava
+  i mapa tenant/globalnih tablica. Dodan sažetak tehničkih odluka i granica;
+  uklonjeni zastarjeli README opisi neutralnih stranica i budućeg M1-08.
+- Backlog sada ima aktualni status svih 14 zadataka, poveznice na stvarne
+  testove/datoteke i pojedinačne otvorene prihvate. Stara početna uputa
+  koristi stvarne `docs/` putanje i trenutačno zadani opseg.
+- Sačuvane zatečene dopune README-a, backloga i progressa iz dijagnostike
+  autoloadera. Aplikacijski kod, ovisnosti i razvojni podaci nisu mijenjani.
+
+Izvršene provjere:
+
+- `composer show --direct` potvrdio instalirane verzije; pregledani manifesti,
+  konfiguracija, stvarne rute (`php artisan route:list --except-vendor
+--no-interaction`) i testovi navedeni u demonstraciji.
+- `docker compose ps`: razvojni i testni MySQL 8.4.11 te Mailpit zdravi.
+  Prvi pristup Docker pipeu bio je zabranjen u sandboxu; read-only ponavljanje
+  izvan sandboxa uspjelo je. Nisu restartani postojeći servisi.
+- `php artisan test --compact tests/Feature/LocalDemoSeederTest.php
+tests/Feature/StudioAdministrationTest.php tests/Feature/TenantIsolationTest.php
+tests/Feature/TenantAuthenticationTest.php tests/Feature/PlatformTenantTest.php`:
+  **100 prolazi, 962 assertiona, 46,8 s**, bez preskočenih testova u ovom skupu.
+  Pokriva seed i pravi TOTP enrolment, platform registar, objavu samo vlastitog
+  profila, zabrane uloga, cross-tenant čitanje/upis, pozivnice/deaktivaciju,
+  odvojene račune/sesije/reset/verifikaciju i lokalni owner email.
+- `npm run check`: format svih 98 datoteka i lint 83 datoteke prolaze bez
+  upozorenja/pogrešaka. Prvi sandbox pokušaj blokirao je `spawn EPERM`;
+  izvan sandboxa otkriven je format README-a, zatim su samo README/progress
+  formatirani postojećim `vp fmt` i provjera uspješno ponovljena.
+- Provjerene lokalne Markdown poveznice i sidra u sva tri promijenjena
+  dokumenta; nema nepostojećih ciljeva. `git diff --check` prolazi.
+
+Nije izvršeno: cijeli ručni browser demo, novi vizualni pregled, puni svježi
+setup, GitHub runner, puna Pest zbirka ni novi client/SSR build. Promjena je
+dokumentacijska; prethodni SSR/build/vizualni rezultati ostaju datirani dokazi,
+ne novi prolazi. Specifikacija nije mijenjana jer produktni opseg nije proširen.
+Nema commita, pusha, deploya, naplata ni emailova stvarnim primateljima.
+
+Sljedeći konkretan korak: ponoviti README demo i zabilježiti stvarne rezultate,
+zatim zatvoriti svježi setup, CI i otvorene admin/auth prihvate iz backloga.
+Za punu lokalnu regresiju pokrenuti `php artisan test --compact`; za živi SSR
+slijediti M1-13 postupak s Node procesom i `SSR_TEST_URL`.

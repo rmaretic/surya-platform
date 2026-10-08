@@ -2,7 +2,8 @@
 
 Datum: 3. listopada 2026.  
 Izvor: [produktna specifikacija](specifikacija-platforme-v1.md), verzija 1.5 i naknadni zahtjev vlasnika.  
-Status: razvojni zadaci spremni za implementaciju; aplikacija ovim dokumentom nije implementirana.
+Status (8. listopada 2026.): implementacija i dokazi prate se u pregledu
+prihvata ispod; M1 kao cjelina još nije potpuno prihvaćen.
 
 ## Cilj i granica isporuke
 
@@ -47,6 +48,36 @@ Javna registracija uvijek kreira customer ulogu. Ownera inicijalno poziva platfo
 `M1-01 → M1-02 → M1-03 → M1-04 → M1-05 → M1-06 → M1-07 → M1-08 → M1-09 → M1-10 → M1-11 → M1-12 → M1-13 → M1-14`
 
 Redoslijed je preporučeni implementacijski put. Testove pisati uz odgovarajući zadatak; M1-13 je integracijska provjera, a ne prvo testiranje. Nakon svakog zadatka mora postojati pokretljivo stanje ili dokumentiran razvojni fixture. Ne dodavati napredne module radi popunjavanja ekrana.
+
+## Pregled prihvata — 8. listopada 2026.
+
+Ovo je aktualni pregled svih zadataka. Detaljni zapisi niže i u progressu
+zadržavaju datume svojih provjera. **Dovršeno** znači potvrđeni opseg zadatka;
+**otvoreno** znači da implementacija postoji, ali dio prihvata nije potvrđen.
+Nema proglašenja cijelog M1 dovršenim. Rezultati od 7. listopada nisu novi
+testni prolaz od 8. listopada.
+
+| Zadatak | Status prihvata | Dokaz i preostali korak |
+| --- | --- | --- |
+| M1-01 | Otvoreno | [Setup](../README.md#prvo-pokretanje), [Composer skripte](../composer.json). Čista Composer instalacija potvrđena 8. listopada; puni svježi setup s novom bazom i frontendom još nije potvrđen. |
+| M1-02 | Dovršeno | [MySQL model/constraint testovi](../tests/Feature/TenantFoundationTest.php), [mapa tablica](../README.md#podatkovni-temelj--m1-02). |
+| M1-03 | Dovršeno | [Resolver i host/proxy granice](../tests/Feature/TenantResolutionTest.php), [normalizacija](../tests/Unit/NormalizeHostnameTest.php). |
+| M1-04 | Dovršeno | [Izolacija/binding/cache](../tests/Feature/TenantIsolationTest.php), [isti queue worker i cleanup](../tests/Feature/TenantJobIsolationTest.php). |
+| M1-05 | Otvoreno | [Auth granice](../tests/Feature/TenantAuthenticationTest.php), [lokalni email](../tests/Feature/LocalAuthenticationMailTest.php). Preostaje potpuni ručni email/auth prolaz; dio teksta je engleski. |
+| M1-06 | Otvoreno | [Uloge i 2FA](../tests/Feature/RoleAndTwoFactorTest.php), [demo enrolment](../tests/Feature/LocalDemoSeederTest.php). Nedostaje vizualni pregled QR/enrolmenta, izdanih recovery kodova i grešaka. Vlastite settings izmjene ostaju zatvorene; pregled računa i reset lozinke nisu potpuna zamjena za taj dio matrice. |
+| M1-07 | Otvoreno | [Platform admin](../tests/Feature/PlatformTenantTest.php), [djelomični UI pregled](vizualni-pregled-m1.md#rezultati-po-zadatku). Vizualno potvrditi aktivaciju/verifikaciju domene, slanje/prihvat owner poziva i paginaciju. |
+| M1-08 | Otvoreno | [Studio admin/osoblje](../tests/Feature/StudioAdministrationTest.php). Vizualno potvrditi owner obrasce, cijeli tijek pozivnice i deaktivacije; portal polaznika ranije pregledan. |
+| M1-09 | Dovršeno | [Javni ugovor i registar](../tests/Feature/PublicStudioTest.php), [implementacija i build granice](progress.md#m1-09--registar-dizajna-i-javni-ugovor-podataka). |
+| M1-10 | Dovršeno | [375/768/1440 px, reduced motion i screenshotovi](vizualni-pregled-m1.md#m1-10--javni-demo-dizajni-7-listopada-2026). Granica dokaza: Chromium, bez fizičkog slabijeg mobitela i Safari/Firefoxa. |
+| M1-11 | Dovršeno | [SSR testovi](../tests/Feature/PublicStudioSsrTest.php), [živi SSR i browser dokaz](progress.md#m1-11--ssr-i-granice-hostova). Fallback bez JS-a nema javni body. |
+| M1-12 | Otvoreno | [Idempotentan demo seed](../tests/Feature/LocalDemoSeederTest.php), [lokalne domene](../README.md#demo-seed-i-lokalne-domene--m1-12). Puni demo iz svježeg checkouta i opcionalni Nginx nisu izvršno potvrđeni. |
+| M1-13 | Otvoreno | [CI workflow](../.github/workflows/tests.yml), [lokalni rezultati](progress.md#m1-13--integracijska-provjera-i-ci). Potvrditi GitHub run odgovarajućeg commita i puni svježi setup; 12 scaffold testova ostaje preskočeno. |
+| M1-14 | Dokumentacija predana; ručni prihvat otvoren | [Ponovljivi demo, odluke i ograničenja](../README.md#demonstracija-i-predaja--m1-14), [nove provjere](progress.md#m1-14--demonstracija-i-predaja). Cijeli ručni scenarij i vlasnikov prolaz još nisu zabilježeni. |
+
+M1-14 isporučuje upute i eksplicitne preostale stavke, ne zatvara ranije
+neizvršene provjere. U dokumentiranim rezultatima nema poznatog otvorenog
+curenja podataka; svako novo otkriće blokira prihvat do ispravka i regresijskog
+testa. Sljedeće: puni svježi setup, potvrda CI-ja te ručni demo/admin pregled.
 
 ## M1-01 — repozitorij i lokalno pokretanje
 
@@ -203,8 +234,10 @@ potvrđeno. [Workflow](../.github/workflows/tests.yml),
 Vizualni kriterij oslanja se na postojeći
 [pregled M1-10](vizualni-pregled-m1.md#m1-10--javni-demo-dizajni-7-listopada-2026);
 layout i animacije nisu mijenjani.
-Puni svježi setup također ostaje otvoren zbog zastoja Composer autoloadera
-u privremenoj čistoj kopiji; detalji su u rezultatima.
+Provjera 8. listopada: čista Composer instalacija, optimizirani autoloader i
+package discovery prolaze za 44 sekunde u zasebnoj kopiji unutar radnog
+direktorija. Puni svježi setup (uključujući bazu i frontend) te GitHub rezultat
+ostaju zasebne otvorene provjere; detalji su u rezultatima.
 
 Dodati GitHub Actions provjeru migracija/testova na MySQL-u, frontend typecheck i build, te primjenjive repozitorijske lint provjere. CI ne radi deploy niti stvarno šalje mailove. Koristiti testne tajne i fixturee. Tenant/DB testovi ne smiju prolaziti samo na SQLiteu ako produkcijski constraintovi ovise o MySQL-u.
 
@@ -215,6 +248,13 @@ Obvezni tokovi: nepoznat host; podmetnut tenant; cross-tenant čitanje/upis; ist
 ## M1-14 — demonstracija i predaja
 
 **Ovisnosti:** M1-13.
+
+**Status (8. listopada 2026.):** dokumentacija predaje pripremljena;
+100 postojećih regresijskih testova demo tokova prolazi na MySQL-u
+(962 assertiona). [Demo u README-u](../README.md#demonstracija-i-predaja--m1-14),
+[rezultati](progress.md#m1-14--demonstracija-i-predaja).
+Cijeli ručni demo nije izvršen u ovom zadatku; M1 ostaje otvoren prema
+gornjoj matrici, bez tvrdnje o potpunom prihvatu.
 
 Isporučiti README za pokretanje, migracije/seed, dev mail inbox, SSR i testove; sažetu matricu prava; mapu tenanta/globalnih tablica; zapis tehničkih odluka i poznatih ograničenja. U backlogu označiti završene zadatke i linkati stvarne testove/datoteke.
 
@@ -234,6 +274,6 @@ Demonstracija: platform admin vidi dva studija → otvori Lotus i Balance na raz
 
 ## Uputa za početak rada u Codexu
 
-> Koristi outputs/razvojni-backlog-m1.md kao opseg ovog milestonea i outputs/specifikacija-platforme-v1.md kao širi produktni kontekst. Prvo pregledaj repozitorij i njegove upute. Implementiraj M1-01 do M1-04, uključujući pripadajuće testove; ne dodaj rezervacije, plaćanja ni vanjske produkcijske integracije. Zaključaj kompatibilne verzije, dokumentiraj lokalno pokretanje i MySQL model te dokaži izolaciju dva testna tenanta. Na kraju navedi provedene provjere, preostale stavke i pripremi nastavak od M1-05. Ne mijenjaj potvrđene produktne odluke bez obrazloženja.
+> Koristi docs/razvojni-backlog-m1.md kao opseg ovog milestonea i docs/specifikacija-platforme-v1.md kao širi produktni kontekst. Prvo pregledaj repozitorij i njegove upute. Implementiraj samo trenutačno zadani zadatak; pregled prihvata iznad određuje što je već implementirano i što ostaje otvoreno. Ne dodaj rezervacije, plaćanja ni vanjske produkcijske integracije bez zasebnog zadatka. Na kraju navedi provedene provjere, preostale stavke i sljedeći korak. Ne mijenjaj potvrđene produktne odluke bez obrazloženja.
 
 Nakon prve isporuke nastaviti skupinama M1-05–M1-08 (identitet i admini), M1-09–M1-12 (dizajni i demo), pa M1-13–M1-14 (integracija i predaja). Ovaj raspored ne uvodi obvezu novih potvrda za rutinske implementacijske odluke; služi preglednosti i provjeri rezultata.

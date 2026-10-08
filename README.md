@@ -1,9 +1,13 @@
 # Surya
 
 Laravel + Vue + Inertia platforma za yoga studije. Trenutačni inkrement je
-M1-13: integracijska provjera na MySQL-u i CI sa stvarnim SSR procesom.
-Studio administracija, javni profil i osoblje implementirani su u M1-08;
-njihov potpuni vizualni prihvat još je otvoren.
+M1-14: dokumentacija predaje i ponovljiva demonstracija lokalnog demoa.
+Milestone još nije potpuno prihvaćen: otvorene provjere i dokazi za svih
+14 zadataka nalaze se u [pregledu prihvata](docs/razvojni-backlog-m1.md#pregled-prihvata--8-listopada-2026).
+
+Za predaju kreni od [demo scenarija](#demonstracija-i-predaja--m1-14).
+Pokretanje, migracije, Mailpit i SSR opisani su u nastavku; postojeće
+rezultate provjera čitaj uz njihov datum u [progressu](docs/progress.md).
 
 ## Preduvjeti
 
@@ -201,7 +205,7 @@ php artisan test --compact tests/Feature/TenantAuthenticationBoundaryTest.php
 ```
 
 U M1-06 vraćeno je još pet auth testova uz 26 novih regresijskih testova.
-Preostalih 12 scaffold testova za settings i dashboard čeka M1-08.
+Preostalih 12 scaffold testova za settings i dashboard ostaje preskočeno.
 Nisu izbrisani niti se računaju kao prolazni. Nedovršene settings rute ostaju
 zatvorene; javna stranica ne izlaže korisnika stare scaffold sesije.
 
@@ -359,9 +363,9 @@ zahtjevom. Ostali korisnici mogu dobrovoljno uključiti i isključiti 2FA.
 Policies provode matricu i izvan HTTP middlewarea. Osoblje se smije pozvati
 ili prebaciti samo u manager/instructor ulogu; owner i customer nisu mete
 deaktivacije osoblja. Svi tenant ciljevi moraju pripadati aktivnom studiju.
-Platform registar i početna owner pozivnica dostupni su u M1-07.
-Obrasci profila i upravljanje ostalim osobljem slijede u M1-08.
-`/dashboard` i `/portal` trenutačno prikazuju minimalnu stranicu računa;
+Platform registar i početna owner pozivnica dostupni su od M1-07,
+a javni profil i upravljanje osobljem od M1-08.
+`/dashboard` prikazuje pregled prema ulozi, `/portal` vlastiti račun polaznika;
 `/platform/dashboard` prikazuje stvarni registar i brojeve studija.
 
 ### Lokalna demonstracija enrolmenta
@@ -462,9 +466,8 @@ profil, domene, pozivnicu i posljednjih 30 platformskih audit zapisa.
    studio. Audit bilježi operatora, studio, domenu, vrijeme, referencu i
    prethodni/novi status. Potvrda nije automatski dokaz konfiguracije infrastrukture.
 
-Registar dizajna u M1-07 ograničava izbor i promjenu metapodatka `design_key`.
-Mapiranje na individualne javne Vue frontendove ostaje opseg M1-09/M1-10.
-Javna stranica zasad ostaje postojeći neutralni prikaz.
+Registar dizajna ograničava izbor i promjenu metapodatka `design_key`.
+Od M1-09/M1-10 dopušteni ključevi prikazuju zasebne Lotus/Balance frontendove.
 
 ### Početna owner pozivnica
 
@@ -534,8 +537,8 @@ računa sada vodi na **Pregled**, **Javni profil** i **Osoblje**.
 
 - Javni profil uređuje naziv, kratki opis, email, telefon i adresu. **Spremi
   i objavi** odmah mijenja javnu naslovnicu samo tog studija. Naziv u registru
-  platforme ostaje operativni identitet studija. Javna stranica zasad koristi
-  neutralni prikaz; zasebni dizajni slijede u M1-09/M1-10.
+  platforme ostaje operativni identitet studija. Javna stranica koristi
+  dodijeljeni Lotus ili Balance dizajn iz dopuštenog registra.
 - Owner poziva samo managera ili instruktora. Email se normalizira, a postojeći
   račun u istom studiju ne promiče se automatski. Postojeću nepotrošenu pozivnicu
   treba ponovno poslati ili opozvati prije stvaranja nove za isti email.
@@ -927,6 +930,43 @@ zanemaruju `public/hot`; postojeći Vite može ostati pokrenut.
 | Lotus → Balance → Lotus na istom Node procesu                        | `PublicStudioSsrTest.php`                                    |
 | Demo seed i lokalni email                                            | `LocalDemoSeederTest.php`, `LocalAuthenticationMailTest.php` |
 
+### Pregled rezultata na GitHubu
+
+U repozitoriju otvori **Actions**, lijevo odaberi **tests**, zatim izvršavanje
+za odgovarajući commit (M1-13 uveden je commitom `41d04f2`, `Add github actions`).
+Otvori posao **ci** i njegove korake. Za uspješan M1-13 trebaju proći
+`Setup Application`, provjera seeda i `Run CI Checks`; samo zeleni checkout
+nije dovoljan. U `Run CI Checks` provjeri zbirni rezultat testova i uspjeh
+lint/typecheck provjera. Lokalna referenca je 273 prolaza, 12 ranijih scaffold
+skipova i 2088 assertiona. Ako izvršavanje padne, otvori prvi neuspjeli korak
+i pronađi stvarnu grešku iznad završnog `exit code 1`.
+
+Popis u Actions prikazuje izvršavanja vezana uz commitove, a ne samo Git
+povijest. Detalji postupka su u
+[GitHub dokumentaciji](https://docs.github.com/en/actions/how-tos/monitor-workflows/view-workflow-run-history).
+
+### Dijagnostika Composer autoloadera na Windowsu
+
+Za ponovno generiranje autoloadera bez nadogradnje paketa:
+
+```powershell
+composer dump-autoload --optimize --profile
+```
+
+Provjera 8. listopada 2026.: postojeći projekt prolazi za 6,7 s, uključujući
+Laravel package discovery. Nova instalacija iz lockfilea u odvojenoj kopiji
+pod radnim direktorijem prolazi za 43,9 s (154 paketa). Ista kopija u Windows
+`%TEMP%` pokazuje izrazito sporije čitanje datoteka: uzorak 174 PHP datoteke
+čita se 0,132 s na D:, a 9,829 s u `%TEMP%`. Dijagnostičko praćenje potvrđuje
+da skeniranje napreduje kroz pakete, iako dugo nema standardnog ispisa.
+
+Projekt i čiste probne instalacije drži u radnom direktoriju na D:, umjesto
+u `%TEMP%`. Nije utvrđen točan OS uzrok sporijeg čitanja; antivirus nije
+potvrđen kao uzrok. Nisu potrebne nadogradnje, isključivanje zaštite ni
+brisanje postojećeg `vendor` direktorija radi ovog nalaza. Upozorenje za
+testni `TenantIsolationProbeJob` izvan PSR-4 putanje nije fatalno i pojavljuje
+se i pri uspješnom generiranju.
+
 Stvarni rezultati i ograničenja nalaze se u
 [napretku M1-13](docs/progress.md#m1-13--integracijska-provjera-i-ci).
 Prethodni ručni pregled Home/About obaju dizajna na 375/768/1440 px,
@@ -936,6 +976,131 @@ Layout i animacije u M1-13 nisu mijenjani. Dvanaest ranije isključenih
 single-tenant scaffold testova (`Settings/*`, `DashboardTest.php`) ostaje
 preskočeno; tenant dashboard i sigurnosni tokovi imaju zasebne aktivne testove.
 To nije tvrdnja da su sve scaffold funkcionalnosti vraćene.
+
+## Demonstracija i predaja — M1-14
+
+Datum predaje dokumentacije: 8. listopada 2026. Ovo je lokalni razvojni demo.
+Postupak ispod je uputa za ponavljanje; nije zapis da je cijeli scenarij
+ručno izvršen. Stvarni rezultati i otvorene stavke vode se u
+[progressu](docs/progress.md#m1-14--demonstracija-i-predaja) i
+[backlogu](docs/razvojni-backlog-m1.md#pregled-prihvata--8-listopada-2026).
+
+### Priprema demonstracije
+
+- Za novu instalaciju slijedi [prvo pokretanje](#prvo-pokretanje), uključujući
+  migracije i `LocalDemoSeeder`. Za postojeću instalaciju pokreni lokalne
+  servise i `composer dev`; ne ponavljaj `composer setup` jer mijenja APP_KEY.
+- Provjeri [hosts zapis i port](#hosts-i-izravni-razvojni-pristup). Standardni
+  lokalni origin je `http://platform.yoga.test:8000`; Lotus i Balance koriste
+  isti protokol i port, s hostnameovima `lotus.yoga.test` i `balance.yoga.test`.
+- Koristi [demo račune](#demo-seed-i-lokalne-domene--m1-12). Na postojećoj bazi
+  njihove lozinke ili 2FA mogu već biti promijenjeni; seed ih ne resetira.
+  Platform admin i Lotus owner moraju završiti
+  [stvarni 2FA enrolment](#lokalna-demonstracija-enrolmenta).
+- Pripremi obični prozor za administratore i zasebni privatni prozor za
+  managera/polaznika. Tabovi na istoj domeni u istom profilu dijele sesiju.
+  Za javni prikaz dovoljne su zasebne kartice s dvije naslovnice.
+- Zapiši početni Lotus kontakt email i Balance kontakt email. Koristi samo
+  demo podatke. Promjena javnog profila odmah se objavljuje i ostavlja audit.
+
+### Scenarij i očekivani rezultati
+
+1. **Platform admin vidi studije.** Na platform domeni otvori
+   `/platform/login`, prijavi se kao `platform@example.test`, dovrši 2FA i
+   otvori `/platform/tenants`. Registar mora sadržavati Lotus i Balance,
+   njihove domene i različite dizajne. Na svježem seedu postoje dva studija;
+   postojeća baza može sadržavati dodatne zapise, pa ih ne briši radi demoa.
+2. **Dva javna dizajna.** Otvori `/` i `/about` na Lotus i Balance domeni.
+   Provjeri naziv, kontakt i kompoziciju: Lotus je svijetli editorial dizajn,
+   Balance tamni geometrijski. Obje domene koriste istu aplikaciju.
+3. **Owner objavljuje kontakt.** Na Lotus `/login` prijavi se kao
+   `owner.lotus@example.test`. Nakon 2FA otvori **Javni profil**
+   (`/studio/profile`). Promijeni samo **Kontakt email** u
+   `demo.m1-14@example.test` i klikni **Spremi i objavi**. Očekuj potvrdu uspjeha.
+4. **Promjena je izolirana.** Osvježi obje javne naslovnice. Lotus mora
+   prikazati novi email, a Balance svoj prethodni email. Povratak kroz
+   Home/About navigaciju mora zadržati odgovarajući studio i dizajn.
+5. **Manager nema pravo uređivanja.** U zasebnom prozoru na Lotus domeni
+   prijavi se kao `manager.lotus@example.test`. `/dashboard` je dostupan,
+   ali izravan odlazak na `/studio/profile` mora vratiti **403**.
+   Zabranu stvarnog PATCH upisa, uz provjeru da podaci nisu promijenjeni,
+   ponovi testom navedenim ispod; skrivena poveznica sama nije dokaz zaštite.
+6. **Isti email, odvojeni računi.** Odjavi managera. Na Lotus `/login`
+   prijavi `customer@example.test` lozinkom `Lotus-Demo-2026!`, a na Balance
+   `/login` isti email lozinkom `Balance-Demo-2026!`. Na `/account` provjeri
+   vlastiti identitet i pripadajući studio. Odjavi oba računa i jednom pokušaj
+   Lotus lozinku na Balanceu: očekuj odbijenu prijavu. To vrijedi za izvorne
+   demo lozinke; ako su promijenjene, koristi aktualne lozinke tih računa.
+7. **Tuđi podatak je odbijen.** Pokreni niže navedeni test poznatog stranog
+   ID-ja. On stvara dva izolirana fixture studija i očekuje **404** i za
+   čitanje i za upis Balance profila pod Lotus kontekstom, uz nepromijenjen
+   Balance zapis. Ruta `/_test/profiles/{profile}` postoji samo unutar testa;
+   nije demo URL. Dodatni test osoblja provjerava stvarnu aplikacijsku rutu
+   i odbijanje izmjene djelatnika drugog studija.
+8. **Vrati demo kontakt.** Kao Lotus owner vrati izvorni kontakt email,
+   spremi i osvježi obje naslovnice. Audit promjene i vraćanja ostaje.
+   Odjavi demo račune; ne spremaj sesije, TOTP tajne ili recovery kodove u
+   screenshotove ili repozitorij. Ponovljeni seed nije način vraćanja profila.
+
+Sigurnosni dio demonstracije, iz korijena projekta uz pokrenut testni MySQL:
+
+```powershell
+php artisan test --compact tests/Feature/StudioAdministrationTest.php --filter="manager instructor and customer cannot manage profile staff or invitations"
+php artisan test --compact tests/Feature/TenantIsolationTest.php --filter="known foreign profile IDs return 404 for both reading and writing"
+php artisan test --compact tests/Feature/StudioAdministrationTest.php --filter="owner changes staff roles but cannot modify owners customers or foreign staff"
+```
+
+Za objedinjenu regresijsku provjeru demoa:
+
+```powershell
+php artisan test --compact tests/Feature/LocalDemoSeederTest.php tests/Feature/StudioAdministrationTest.php tests/Feature/TenantIsolationTest.php tests/Feature/TenantAuthenticationTest.php tests/Feature/PlatformTenantTest.php
+```
+
+`phpunit.xml` prisilno koristi zasebni `surya_testing` MySQL na 3308;
+testovi resetiraju tu testnu bazu. Platform test uključuje lokalni Mailpit.
+Ovaj skup ne provjerava browser izgled ni živi SSR; za njih vidi
+[vizualne dokaze](docs/vizualni-pregled-m1.md) i
+[integracijski postupak](#integracijska-provjera-i-ci--m1-13).
+
+Nakon ručnog prolaza zabilježi u `docs/progress.md` datum, commit, preglednik,
+izvršene korake, očekivani/stvarni rezultat i preostale greške. Ne označavaj
+neizvršeni korak prolaznim. Svako uočeno curenje podataka blokira prihvat M1.
+
+### Tehničke odluke i granice isporuke
+
+| Odluka                                  | Razlog i mjesto u projektu                                                                                                                                         |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Jedna aplikacija i zajednički MySQL     | Modularni monolit bez instalacije po studiju; [mapa tenant/globalnih tablica](#podatkovni-temelj--m1-02).                                                          |
+| Tenant dolazi iz verificiranog hosta    | Nema zadane studio domene niti povjerenja u klijentski `tenant_id`; [resolver](app/Http/Middleware/ResolveTenantFromHost.php) i [kontekst](app/TenantContext.php). |
+| Više slojeva izolacije                  | Scope, binding, policies, DB constraintovi te cleanup cache/job konteksta; [provedba](#izolacija-podataka-cachea-i-jobova--m1-04).                                 |
+| Platform identitet je zaseban           | Bez implicitnog support pristupa studiju ili cross-domain SSO-a; [sažeta matrica prava](#uloge-i-2fa--m1-06).                                                      |
+| Obvezni 2FA ostaje i u demou            | Fortify enrolment za ownera/platform admina, bez poznate seed tajne ili bypassa.                                                                                   |
+| Fiksni javni profil i dopušteni dizajni | Odmah objavljena sigurna polja, zajednički DTO i eksplicitni registar; nema proizvoljnih Vue putanja ni CMS draftova.                                              |
+| SSR javnih stranica uz noindex demoa    | Metadata iz pouzdane domene; [fallback i ograničenja](#ssr-seo-i-granice-hostova--m1-11).                                                                          |
+| Lokalni servisi i zaključane ovisnosti  | MySQL/Mailpit u Composeu, PHP/Node na hostu; nema produkcijskog SES-a, Bunnyja, Fathoma ni naplata.                                                                |
+
+Poznata ograničenja pri predaji:
+
+- **Otvoreni prihvat:** puni svježi setup s bazom i frontendom, GitHub CI run
+  odgovarajućeg commita i preostali admin/auth vizualni tokovi. Pojedinačni
+  zadaci i dokazi navedeni su u backlogu; dokumentacija ih ne zatvara.
+- **Račun korisnika:** vlastiti profil služi pregledu, odjava i reset lozinke
+  rade; scaffold uređivanje/brisanje profila i settings promjene ostaju
+  zatvoreni. Dvanaest starih scaffold testova je preskočeno. Stavka matrice
+  o vlastitoj lozinci zato nije potpuni prihvat uređivanja kroz settings.
+- **Operativa:** opcionalni Nginx primjer nije izvršno provjeren; nema
+  produkcijskog TLS-a, deploya, monitoringa ili potvrđenog restore postupka.
+  Ručna verifikacija domene ne konfigurira infrastrukturu.
+- **Browseri i jezik:** prethodni QA je Chromium na emuliranim širinama;
+  Safari/Firefox, fizički slabiji mobitel i potpuni accessibility audit nisu
+  potvrđeni. Dio auth sučelja i validacija još je na engleskom; HR usklađenje
+  ostaje otvoreno. Bez SSR-a i JavaScripta javni body nije dostupan.
+- **Izvan M1:** raspored, booking, krediti, članarine, naplate/fiskalizacija,
+  videoteka, analitika, potpuni CMS, import/export i produkcijski onboarding.
+  Šira specifikacija opisuje budući opseg, ne trenutačne funkcionalnosti.
+
+Sljedeći korak je ponoviti ovaj demo i zatvoriti otvorene prihvate prije
+proglašenja M1 dovršenim. Poslovni moduli zahtijevaju zasebno zadan opseg.
 
 ## Projektne upute
 
