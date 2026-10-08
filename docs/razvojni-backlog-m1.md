@@ -194,6 +194,18 @@ Dokumentirati hosts mapiranje i lokalni reverse proxy prema istoj Laravel aplika
 
 **Ovisnosti:** M1-12 i testovi svih prethodnih zadataka. **Veza:** AC01–AC04, AC27–AC28 i M1 dio AC29.
 
+**Status (7. listopada 2026.):** CI dopunjen; lokalna integracijska zbirka
+prolazi na MySQL-u sa stvarnim SSR-om (273 prolazi, 12 ranijih scaffold skipova,
+2088 assertiona). Izvršavanje izmijenjenog workflowa na GitHub runneru još nije
+potvrđeno. [Workflow](../.github/workflows/tests.yml),
+[ponavljanje i mapa testova](../README.md#integracijska-provjera-i-ci--m1-13),
+[rezultati i ograničenja](progress.md#m1-13--integracijska-provjera-i-ci).
+Vizualni kriterij oslanja se na postojeći
+[pregled M1-10](vizualni-pregled-m1.md#m1-10--javni-demo-dizajni-7-listopada-2026);
+layout i animacije nisu mijenjani.
+Puni svježi setup također ostaje otvoren zbog zastoja Composer autoloadera
+u privremenoj čistoj kopiji; detalji su u rezultatima.
+
 Dodati GitHub Actions provjeru migracija/testova na MySQL-u, frontend typecheck i build, te primjenjive repozitorijske lint provjere. CI ne radi deploy niti stvarno šalje mailove. Koristiti testne tajne i fixturee. Tenant/DB testovi ne smiju prolaziti samo na SQLiteu ako produkcijski constraintovi ovise o MySQL-u.
 
 Obvezni tokovi: nepoznat host; podmetnut tenant; cross-tenant čitanje/upis; isti email i reset u dva studija; prijenos sesije na drugu domenu; registracija s podmetnutom ulogom; zabrana admina pogrešnoj ulozi; 2FA; pozivnica i deaktivacija; promjena javnog profila; job iznimka i sljedeći tenant; SSR izolacija.

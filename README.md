@@ -1,7 +1,7 @@
 # Surya
 
 Laravel + Vue + Inertia platforma za yoga studije. Trenutačni inkrement je
-M1-12: lokalni demo seed, pristupni podaci i postavljanje lokalnih domena.
+M1-13: integracijska provjera na MySQL-u i CI sa stvarnim SSR procesom.
 Studio administracija, javni profil i osoblje implementirani su u M1-08;
 njihov potpuni vizualni prihvat još je otvoren.
 
@@ -877,6 +877,66 @@ mapiranje. Njega provjeri browserom bez `--resolve`. Stvarno izvršene provjere
 i ograničenja zabilježeni su u [napretku M1-12](docs/progress.md#m1-12--demo-seed-i-lokalne-domene).
 Za cijelu zbirku pokreni `php artisan test --compact`.
 
+## Integracijska provjera i CI — M1-13
+
+Workflow `.github/workflows/tests.yml` pokreće se na push u `main` i pull
+requestove. Koristi PHP 8.5, Node 24 i zaključane Composer/npm ovisnosti.
+`composer setup --no-interaction` na praznom runneru podiže MySQL 8.4.11 i
+lokalni Mailpit, izvršava migracije te gradi client i SSR. Zatim se provjeravaju
+Composer manifest/platforma i dvostruko izvršavanje demo seeda.
+
+Prije `composer ci:check` CI pokreće izgrađeni Node SSR, čeka `/health` i
+postavlja `SSR_TEST_URL`. Time se izvršavaju i dva stvarna SSR testa; kvar
+procesa prekida provjeru. `ci:check` uključuje frontend format/lint i
+TypeScript, Pint, PHPStan i cijelu Pest zbirku. MySQL je prisilno odabran u
+`phpunit.xml`; testna baza odvojena je od demo baze. CI koristi generirani
+APP_KEY i lokalne fixture lozinke, bez GitHub produkcijskih tajni. Zadani mail
+transport je `array`; jedini SMTP test šalje na `example.test` kroz lokalni
+Mailpit bez vanjskog relaya. Workflow nema deploy i na kraju gasi svoje servise.
+
+Lokalno ponavljanje uz pokrenute servise i postojeći `.env`:
+
+```powershell
+docker compose up -d --wait
+composer validate --strict --no-check-publish
+composer check-platform-reqs
+npm run build
+node bootstrap/ssr/app.js
+```
+
+Node ostavi u prvom terminalu. U drugom:
+
+```powershell
+$env:SSR_TEST_URL = 'http://127.0.0.1:13714'
+composer ci:check
+Remove-Item Env:SSR_TEST_URL
+```
+
+Zaustavi samo Node proces koji si pokrenuo pomoću Ctrl+C. Ako je port već
+zauzet, provjeri postojeći SSR proces prije pokretanja drugog. Live testovi
+zanemaruju `public/hot`; postojeći Vite može ostati pokrenut.
+
+| Obvezni tokovi                                                       | Regresijski testovi u `tests/Feature`                        |
+| -------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Nepoznat host, proxy i podmetnut tenant                              | `TenantResolutionTest.php`                                   |
+| Cross-tenant čitanje/upis, relacije i cache                          | `TenantIsolationTest.php`, `TenantFoundationTest.php`        |
+| Isti email, reset, verifikacija, prenesena sesija i podmetnuta uloga | `TenantAuthenticationTest.php`                               |
+| Uloge, obvezni 2FA, jednokratni recovery i rate limit                | `RoleAndTwoFactorTest.php`                                   |
+| Pozivnica, deaktivacija sesije i javni profil                        | `StudioAdministrationTest.php`                               |
+| Iznimka joba i sljedeći tenant na istom workeru                      | `TenantJobIsolationTest.php`                                 |
+| Lotus → Balance → Lotus na istom Node procesu                        | `PublicStudioSsrTest.php`                                    |
+| Demo seed i lokalni email                                            | `LocalDemoSeederTest.php`, `LocalAuthenticationMailTest.php` |
+
+Stvarni rezultati i ograničenja nalaze se u
+[napretku M1-13](docs/progress.md#m1-13--integracijska-provjera-i-ci).
+Prethodni ručni pregled Home/About obaju dizajna na 375/768/1440 px,
+tipkovnice i reduced-motion dokumentiran je uz
+[snimke M1-10](docs/vizualni-pregled-m1.md#m1-10--javni-demo-dizajni-7-listopada-2026).
+Layout i animacije u M1-13 nisu mijenjani. Dvanaest ranije isključenih
+single-tenant scaffold testova (`Settings/*`, `DashboardTest.php`) ostaje
+preskočeno; tenant dashboard i sigurnosni tokovi imaju zasebne aktivne testove.
+To nije tvrdnja da su sve scaffold funkcionalnosti vraćene.
+
 ## Projektne upute
 
 - [AGENTS.md](AGENTS.md)
@@ -884,6 +944,6 @@ Za cijelu zbirku pokreni `php artisan test --compact`.
 - [Backlog M1](docs/razvojni-backlog-m1.md)
 - [Napredak i rezultati provjera](docs/progress.md)
 
-Git je lokalno inicijaliziran na grani `main`; remote i prvi commit nisu
-postavljeni. `.env`, lokalni agent config, ovisnosti i build artefakti se ne
+Git ima remote `origin` za `rmaretic/surya-platform`. `.env`, lokalni agent
+config, ovisnosti i build artefakti se ne
 verzioniraju. AGENTS.md je uključen u verzioniranje kao zajednička uputa.

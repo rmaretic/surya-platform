@@ -626,3 +626,65 @@ Vite. Admin enrolment potvrđen je automatiziranim HTTP testovima, bez promjene
 Sljedeći konkretan korak: M1-13 — integracijska provjera i CI, uključujući
 svježi checkout; prije zatvaranja proxy provjere pripremiti zasebni lokalni
 Nginx prema README-u. Za cijelu zbirku pokrenuti `php artisan test --compact`.
+
+## M1-13 — integracijska provjera i CI
+
+Datum: 7. listopada 2026. Status: CI implementiran i integracijske provjere
+lokalno prolaze; izvršavanje novog workflowa na GitHub runneru ostaje otvoreno.
+
+- Dopunjen postojeći `.github/workflows/tests.yml`: PHP 8.5 s potrebnim
+  ekstenzijama, Node 24, vremensko ograničenje, zaključane ovisnosti i postojeći
+  `composer setup` za migracije na MySQL-u te client/SSR build. Dodane provjere
+  Composer manifesta/platforme, dvostruki demo seed i Mailpit readiness.
+- CI pokreće stvarni izgrađeni Node SSR, provjerava health i vlastiti PID te
+  postavlja `SSR_TEST_URL` prije `composer ci:check`. Oba live SSR testa sada
+  ulaze u CI; greška renderiranja ne prihvaća se kao client fallback. Proces
+  se čisti preko Bash trapa, a Compose servisi u završnom `always()` koraku.
+- Read-only GitHub ovlasti i postojeći SHA pinovi ostaju. Nema produkcijskih
+  tajni, deploya ni vanjskog SMTP-a. Array mail je zadani transport; lokalni
+  SMTP test koristi samo Mailpit i jedinstvene adrese `example.test`.
+- Pregledana pokrivenost svih obveznih tokova; README sadrži mapu postojećih
+  testova i naredbe za lokalno ponavljanje. Nisu dodavani duplicirani testovi,
+  ovisnosti ni promjene poslovnog ponašanja.
+
+Izvršene provjere:
+
+- `SSR_TEST_URL=http://127.0.0.1:13714` uz `php artisan test --compact`:
+  **273 prolazi, 12 ranije preskočenih, 2088 assertiona**, 83,7 sekundi.
+  Stvarni MySQL 8.4.11, lokalni Mailpit i isti Node SSR proces; uključeni su
+  DB constraintovi, auth granice, uloge/2FA, osoblje, javni profil, queue worker
+  nakon iznimke i Lotus → Balance → Lotus SSR izolacija.
+- `composer validate --strict --no-check-publish`, `composer check-platform-reqs`,
+  `composer lint:check`, `composer types:check`, `npm run types:check`,
+  `npm run check` i `npm run build`: prolaze. Build zadržava poznata upozorenja
+  za opcionalni Fontaine i Inertia sourcemape. Vite je izvršen izvan sandboxa
+  nakon `spawn EPERM`; ovisnosti nisu mijenjane.
+- Workflow je uspješno parsiran postojećim Symfony YAML parserom; svi `run`
+  blokovi prošli su Git Bash `-n`. Mailpit `/readyz` i SSR `/health` vraćaju
+  uspjeh. To nije zamjena za izvršavanje na GitHub Actions runneru.
+- Vizualni kriterij preuzet je iz dokumentiranog ručnog pregleda M1-10:
+  Home/About oba dizajna na 375/768/1440 px, tipkovnica i reduced-motion,
+  sa sačuvanim snimkama. Layout i animacije nisu mijenjani niti se ovdje
+  tvrdi da je izvršen novi browser pregled.
+- Čista kopija iz `git archive HEAD` bez postojećih ovisnosti: `npm ci
+--no-audit --no-fund` uspješan (198 paketa). `composer install
+--no-interaction --prefer-dist` raspakirao je 154 zaključana paketa, ali
+  ostao na `Generating optimized autoload files` dulje od deset minuta.
+  Prekinut je i dijagnostički `composer dump-autoload --no-interaction
+--profile -vvv` nakon ponovljenog zadržavanja u istoj fazi. Uzrok nije
+  utvrđen; to se ne bilježi kao uspješna Composer instalacija. Fresh build,
+  migracije i demo seed te kopije nisu izvršeni. Privremeni MySQL na 13309
+  nije korišten za upis podataka; razvojne baze i `.env` nisu mijenjani.
+
+Otvoreno: puni svježi setup i GitHub run nakon slanja izmjena. Dvanaest starih single-tenant
+scaffold testova u `Settings/*` i `DashboardTest.php` ostaje isključeno;
+aktivni tenant testovi pokrivaju M1 dashboard i sigurnosne granice. Raniji
+admin vizualni prihvati, opcionalni Nginx i Safari/Firefox nisu zatvoreni.
+Nema commita, pusha ni deploya u ovom zadatku.
+Privremena kopija, njezin MySQL kontejner i vlastiti Node SSR uklonjeni/ugašeni;
+postojeći lokalni servisi ostaju pokrenuti.
+
+Sljedeći korak: potvrditi izmijenjeni workflow na GitHubu, zatim M1-14 —
+demonstracija i predaja uz eksplicitan popis preostalih prihvatnih stavki.
+Punu lokalnu zbirku moguće je ponoviti s `php artisan test --compact`;
+za oba live SSR testa zadržati pokrenut Node i postaviti `SSR_TEST_URL`.
