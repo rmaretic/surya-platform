@@ -1,6 +1,7 @@
 # Napredak
 
-Aktualni pregled: [prihvat svih M1 zadataka](razvojni-backlog-m1.md#pregled-prihvata--8-listopada-2026)
+Aktualni inkrement: [M2-01 — pregled M1 i mapa nastavka](pregled-m1-za-m2.md).
+Prethodni pregled: [prihvat svih M1 zadataka](razvojni-backlog-m1.md#pregled-prihvata--8-listopada-2026)
 i [predaja M1-14](#m1-14--demonstracija-i-predaja). Zapisi ispod su datirani
 rezultati pojedinih inkremenata; ranije navedene buduće funkcionalnosti i
 blokade nisu nužno aktualno stanje.
@@ -802,3 +803,74 @@ Status: dovršena sadržajna dopuna prema zasebnom zahtjevu korisnika.
 
 Sljedeći korak: zasebno razraditi vizualni dizajn naslovnice prema korisnikovom
 smjeru. Otvoreni prihvati ostatka M1 ostaju nepromijenjeni.
+
+## M2-01 — pregled M1 i mapa nastavka
+
+Status (8. listopada 2026.): dovršeno za opseg pregleda.
+[Detaljna mapa i rezultati](pregled-m1-za-m2.md).
+
+- Pregledani AGENTS, specifikacija, backlog, stvarni modeli/MySQL shema,
+  resolver, auth/2FA, policies, sesije/tokeni, cache, queue, SSR i testovi.
+- Dokumentirana mapa postojećih modela i budućih M2 modula, mjesta proširenja
+  ovlasti/ruta te plan aditivnih migracija i očuvanja M1 podataka.
+- Nije pronađena nova greška tenant izolacije; aplikacijski kod, ovisnosti,
+  migracije i razvojni podaci nisu mijenjani.
+- Cijela zbirka na MySQL-u uz live SSR: 285 ukupno, 272 prolazi, 1 SSR pad,
+  12 postojećih skipova, 2004 assertiona. Stari Node držao je import asseta
+  uklonjenog novim buildom; nakon restarta svih 17 SSR testova prolazi
+  (263 assertiona). Puna zbirka nakon restarta nije ponovljena.
+- PHPStan, Vue TypeScript, client/SSR build i lint 83 datoteke prolaze.
+  `npm run check` prijavljuje samo postojeće formatiranje M2 backloga;
+  dokument nije masovno preformatiran. README opisuje SSR dijagnostiku.
+- Ostaju M1 ručni auth/admin/demo prihvati, puni svježi setup, GitHub run,
+  opcionalni Nginx i 12 scaffold skipova. Novi browser QA nije izvršen.
+
+Sljedeći konkretan zadatak: M2-02, modeli i tenant constraintovi s MySQL
+testovima očuvanja postojećih podataka; novi moduli ovdje nisu scaffoldani.
+
+Završetak dokumentacije 9. listopada 2026.: formatirani README, progress i
+izvještaj M2-01 postojećim formatterom; `git diff --check` prolazi.
+Prethodni pokušaj formatiranja nije izvršen zbog limita automatske provjere
+odobrenja. Aplikacijski testovi od 8. listopada nisu ponovno pokretani jer
+su u nastavku mijenjani samo dokumenti.
+
+## M2-02 — modeli i constraintovi
+
+Status (9. listopada 2026.): dovršeno za zadani podatkovni opseg.
+
+- Dodano 14 tenant modela, pripadajući factoryji i dvije aditivne migracije
+  s ukupno 16 tablica za katalog, raspored/dostupnost, verzije pravila,
+  proizvode, grantove/ledger, booking, dolaske i outbox. Tenant zona dobiva
+  radni default Europe/Zagreb; trenutke spremamo u UTC-u.
+- Složeni FK-ovi štite tenant veze, vlasništvo granta i ledger–booking
+  povezanost. Generirani unique aktivni slot sprječava duple confirmed
+  rezervacije, uz očuvanje više otkaza i ponovnog bookinga.
+- Arhiviranje kataloga čuva relacije i snapshotove; nema kaskadnog
+  brisanja povijesti. Integer EUR centi/krediti, dokumentirani izvori
+  grantova i odvojeni statusi imaju MySQL ograničenja.
+- Ledger Eloquent builder zabranjuje prepisivanje i brisanje. DB triggeri
+  nisu dio isporuke: testni MySQL odbio ih je zbog SUPER privilegije.
+  Raw SQL/toBase ostaju izvan te zaštite; budući kreditni servis mora
+  koristiti append-only model. Pravila salda/ovlasti dolaze u M2-06/M2-07.
+- Testni seeder povezanog modela radi samo u testing kontekstu, bez
+  registracije u redovni seed. Lokalni M1 demo i stvarni primatelji nisu
+  mijenjani. UI, booking radnje i outbox slanje pripadaju kasnijim zadacima.
+
+Stvarno izvršeno:
+
+- `php artisan test --compact tests/Feature/BookingFoundationTest.php tests/Feature/M2MigrationTest.php tests/Feature/TenantFoundationTest.php tests/Feature/TenantIsolationTest.php`:
+  **160 prolazi, 516 assertiona**, MySQL 8.4.11 na zasebnoj testnoj bazi.
+  Uključuje 107 novih testova, raw cross-tenant upise, rebooking, arhivu,
+  zaštitu ledgera i očuvanje popunjenih M1 identiteta/domene/profila/audita.
+- `composer types:check`: 0 grešaka. `php vendor/bin/pint --dirty --format agent`
+  i `git diff --check`: prolaze.
+- `php artisan migrate --no-interaction`: obje nove migracije uspješno
+  primijenjene na lokalni `surya` MySQL na 13306. Brojevi M1 zapisa prije
+  i poslije jednaki: 3 studija, 9 korisnika, 3 domene/profila, 2 platform
+  admina, 1 pozivnica, 0 tenant i 2 platform audit zapisa.
+- README i M2 backlog ažurirani. Puna zbirka, frontend build i novi browser
+  QA nisu izvršeni; frontend nije mijenjan. Postojeći otvoreni M1 prihvati
+  ostaju otvoreni. Za širu regresiju pokrenuti `php artisan test --compact`.
+
+Sljedeći konkretan zadatak: **M2-03 — katalog i verzionirana pravila**,
+uključujući backend ovlasti owner/manager i provjeru deaktivacije instruktora.

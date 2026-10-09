@@ -1,8 +1,8 @@
 # Surya
 
 Laravel + Vue + Inertia platforma za yoga studije. Trenutačni inkrement je
-M1-14: dokumentacija predaje i ponovljiva demonstracija lokalnog demoa.
-Milestone još nije potpuno prihvaćen: otvorene provjere i dokazi za svih
+[M2-01: pregled M1 i mapa nastavka](docs/pregled-m1-za-m2.md).
+M1 još nije potpuno prihvaćen: otvorene provjere i dokazi za svih
 14 zadataka nalaze se u [pregledu prihvata](docs/razvojni-backlog-m1.md#pregled-prihvata--8-listopada-2026).
 
 Za predaju kreni od [demo scenarija](#demonstracija-i-predaja--m1-14).
@@ -724,6 +724,15 @@ početni HTML, javni tekst u DOM-u bez izvršavanja JavaScripta, zasebne metadat
 oznake i dizajne u Lotus → Balance → Lotus slijedu te escaping javnog sadržaja.
 Za širu integracijsku provjeru pokreni `php artisan test --compact`.
 
+Pregled M2-01 potvrdio je da stari Node nakon novog builda može zadržati
+lazy import na obrisani hash asseta i vratiti `Cannot find module`, iako
+`/health` radi. Nakon builda restartaj Node prije live SSR provjera;
+health odgovor sam nije dokaz uspješnog renderiranja obaju dizajna.
+Aktualni rezultati i otvoreni prihvati nalaze se u
+[izvještaju M2-01](docs/pregled-m1-za-m2.md#rezultati-provjera).
+Za zasebnu lint dijagnostiku koristi `npm run check -- --no-fmt`;
+to ne zamjenjuje puni `npm run check` ni provjeru formatiranja.
+
 ### Ponašanje pri nedostupnom SSR-u
 
 Inertia zadržava HTTP 200 i šalje client-rendered shell. Naslov, description,
@@ -1102,11 +1111,86 @@ Poznata ograničenja pri predaji:
 Sljedeći korak je ponoviti ovaj demo i zatvoriti otvorene prihvate prije
 proglašenja M1 dovršenim. Poslovni moduli zahtijevaju zasebno zadan opseg.
 
+## Podatkovni temelj rasporeda i rezervacija — M2-02
+
+M2-02 dodaje 14 tenant modela i 16 tablica: katalog vrsta, instruktora i
+prostora, verzije pravila, serije i termine, privatnu dostupnost i iznimke,
+proizvode, grantove i dopuštene vrste, kreditni ledger, rezervacije,
+dolaske i outbox. Poslovne radnje i sučelja slijede u M2-03–M2-12.
+
+Primjena na postojećoj instalaciji:
+
+```bash
+php artisan migrate --no-interaction
+```
+
+Migracije `2026_10_09_130203_create_scheduling_foundation` i
+`2026_10_09_130204_create_credit_and_booking_foundation` dodaju tablice bez
+prepisivanja M1 identiteta, domena, profila ili audita. Postojeći studiji
+dobivaju `timezone = Europe/Zagreb`, radnu zadanu vrijednost M2.
+Lokalna baza već je migrirana 9. listopada 2026. Ne koristiti
+`migrate:fresh` na razvojnoj bazi. Rollback ovih migracija uklanja nove
+M2 tablice i njihove podatke; nakon poslovnih upisa koristiti forward popravke.
+
+Podatkovni ugovori:
+
+- Svi poslovni FK-ovi uključuju tenant. Veza booking–grant dodatno uključuje
+  korisnika, a ledger–booking/reversal pripada istom grantu. Referencirani
+  zapisi imaju `RESTRICT` umjesto kaskadnog brisanja.
+- Katalog se arhivira s `archived_at`. Arhivirani zapisi ostaju dostupni
+  povijesnim relacijama; snapshot prava i booking pravila ostaje zaseban.
+- `class_sessions.status`: `draft/published/cancelled/completed`;
+  `bookings.status`: `confirmed/cancelled`, uz zaseban razlog i vrijeme;
+  `attendance_records.status`: `pending/present/no_show`.
+- Generirani `bookings.active_slot` je 1 za potvrđenu rezervaciju i NULL
+  za otkazanu. Unique tenant–termin–korisnik–active_slot sprječava dva
+  aktivna mjesta i dopušta povijest više otkaza i ponovnih rezervacija.
+- Trenuci se spremaju u UTC-u; serije i dostupnost imaju lokalno vrijeme
+  i IANA zonu. ISO dani tjedna su 1–7, ponedjeljak–nedjelja.
+- Cijene su integer centi EUR, krediti integer. Grant ima izvor
+  `demo/external_purchase/complimentary`, autora, vrijeme, valjanost i
+  snapshot proizvoda. Vanjska kupnja zahtijeva referencu, besplatna dodjela
+  razlog. To nisu payment zapisi ni naplata platforme.
+- Jedinstveni operation ključevi, occurrence ključevi, reversal poveznice
+  i outbox dedup ključevi priprema su za idempotentne servise. Sami ne
+  provode provjeru salda, kapaciteta, preklapanja ili ovlasti.
+- `CreditEntryBuilder` odbija Eloquent izmjene, brisanje, upsert i
+  inkrementiranje ledgera, uključujući relacijske upite. Raw SQL i
+  `toBase()` zaobilaze tu aplikacijsku zaštitu i ne smiju služiti za
+  prepisivanje ledgera. Nema DB triggera ni potrebe za SUPER privilegijom;
+  kreditne radnje i transakcijski protokol dolaze u M2-06/M2-07.
+
+Factoryji novih modela zahtijevaju postavljen `TenantContext`.
+`TestingBookingFoundationSeeder` stvara povezan umjetni fixture samo u
+`testing` okruženju i aktivnom studiju. Nije uključen u `DatabaseSeeder`
+ni lokalni demo; lokalni/produkcijski poziv se odbija. Puni idempotentni
+demo ostaje M2-15. Ova isporuka ne pokreće outbox dispatcher i ne šalje email.
+
+Izvršene provjere 9. listopada 2026.:
+
+```bash
+php artisan test --compact tests/Feature/BookingFoundationTest.php tests/Feature/M2MigrationTest.php tests/Feature/TenantFoundationTest.php tests/Feature/TenantIsolationTest.php
+composer types:check
+php vendor/bin/pint --dirty --format agent
+git diff --check
+```
+
+Rezultat: **160 prolazi, 516 assertiona** na MySQL-u 8.4.11; PHPStan i Pint
+prolaze. Od toga je 107 novih M2 testova. Migracijski test provjerava očuvanje
+popunjenog M1 modela u zasebnoj `surya_testing` bazi, uključujući sigurnosna
+polja; MySQL DDL zahtijeva ponovno postavljanje te testne baze prije
+sljedećeg testa. Na razvojnoj bazi broj M1 zapisa ostao je jednak prije i
+poslije migracije. Frontend nije mijenjan pa novi build i browser QA nisu
+izvršeni. Za punu regresiju pokreni `php artisan test --compact`.
+
+Sljedeći zadatak: [M2-03 — katalog i pravila](docs/razvojni-backlog-m2.md#m2-03--katalog-i-pravila).
+
 ## Projektne upute
 
 - [AGENTS.md](AGENTS.md)
 - [Specifikacija](docs/specifikacija-platforme-v1.md)
 - [Backlog M1](docs/razvojni-backlog-m1.md)
+- [Backlog M2](docs/razvojni-backlog-m2.md)
 - [Napredak i rezultati provjera](docs/progress.md)
 
 Git ima remote `origin` za `rmaretic/surya-platform`. `.env`, lokalni agent
