@@ -2,7 +2,7 @@
 
 Datum: 7. listopada 2026.  
 Izvor: specifikacija-platforme-v1.md (v1.6) i razvojni-backlog-m1.md.  
-Status (9. listopada 2026.): M2-01 pregledan i dokumentiran; M2-02 implementiran i provjeren na MySQL-u. Potpuni M1 prihvat ostaje otvoren prema njegovoj matrici. M2-03–M2-15 još nisu implementirani.
+Status (10. listopada 2026.): M2-01 pregledan i dokumentiran; M2-02 i M2-03 implementirani i provjereni na MySQL-u. Potpuni M1 prihvat ostaje otvoren prema njegovoj matrici. M2-04–M2-15 još nisu implementirani.
 
 ## Cilj i granica faze
 
@@ -79,6 +79,8 @@ Jedan aktivan booking po polazniku/terminu zaštititi MySQL-kompatibilnim constr
 ## M2-03 — katalog i pravila
 
 **Ovisnost:** M2-02. **Veza:** 9, 12, 13.
+
+**Status (10. listopada 2026.): dovršeno.** [Katalog u studio administraciji](../resources/js/pages/studio/Catalog.vue), [tenant radnje i validacija](../app/Actions/ManageStudioCatalog.php) te [ovlasti](../app/Policies/StudioCatalogPolicy.php). Owner/manager uređuju vrste, prostore i instruktore; samo owner pakete/cijene i nove verzije rokova. Deaktivacija računa ili profila odbija buduće/tekuće termine i aktivne serije/dostupnost. [60 novih testova](../tests/Feature/StudioCatalogTest.php); završna regresija s osobljem, podatkovnim temeljem i javnim DTO-ovima: **200 prolazi, 1.344 assertiona**. PHPStan, Pint, Vue typecheck, ciljani lint/format i client/SSR build prolaze. Manager sučelje pregledano na desktopu i mobitelu, uključujući tipkovnicu i validacijsku grešku. Puni `npm run check` zaustavlja postojeći format ovog backloga; dokument nije masovno reformatiran. [Ugovori, granice i provjere](../README.md#katalog-i-pravila--m2-03). Zamjena/otkaz termina dolaze u sljedećim zadacima; M2-03 ih sigurno zahtijeva prije deaktivacije.
 
 Admin uređuje vrste, trajanja, kapacitete, prostore i instruktore. Jedna lokacija, više prostorija dopušteno. Owner uređuje cijene i verzionirane rokove. Validirati pozitivne vrijednosti i granice. Deaktiviranje instruktora s budućim terminima traži zamjenu/otkaz.
 

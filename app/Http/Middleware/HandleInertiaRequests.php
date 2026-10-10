@@ -61,6 +61,7 @@ class HandleInertiaRequests extends Middleware
             'studioAccess' => [
                 'administration' => $request->user()?->can('studio-administration'),
                 'manage' => $request->user()?->can('viewAny', User::class),
+                'catalog' => $request->user()?->can('studio-catalog'),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

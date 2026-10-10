@@ -1185,6 +1185,73 @@ izvršeni. Za punu regresiju pokreni `php artisan test --compact`.
 
 Sljedeći zadatak: [M2-03 — katalog i pravila](docs/razvojni-backlog-m2.md#m2-03--katalog-i-pravila).
 
+## Katalog i pravila — M2-03
+
+Owner i manager otvaraju **Katalog i pravila** u navigaciji studio administracije
+(`/studio/catalog` na verificiranoj domeni studija). Ondje dodaju i uređuju
+vrste treninga, zadano trajanje/kapacitet, prostorije jedne lokacije i
+instruktorske profile. Owner dodatno uređuje pakete, cijene u EUR centima,
+broj/valjanost kredita, dopuštene vrste i verzionirane rokove rezervacije/otkaza.
+Manager vidi cjenik i pravila, ali backend odbija njihove izmjene, uključujući
+podmetanje owner-only polja na drugim kataloškim endpointima.
+
+- Sve radnje uzimaju tenant iz domene i zaključavaju postojeći `tenants` red,
+  zatim ciljni zapis. M2-04–M2-07 moraju nastaviti isti koordinacijski protokol.
+  Transakcija uključuje validaciju promjenjivog stanja i tenant audit; retry
+  deadlocka ograničen je na tri pokušaja. Nove migracije i ovisnosti nisu potrebne.
+- Spremanje rokova stvara novu verziju s autorom i vremenom. Aktualna verzija
+  najveći je `version` unutar studija. Nema endpointa za prepisivanje starih
+  verzija; postojeći termini i booking snapshotovi ostaju netaknuti.
+- Promjena zadanog trajanja/kapaciteta vrste ne mijenja postojeće termine.
+  Privatna vrsta ima kapacitet jedan. Način postojeće vrste i korisnik
+  instruktorskog profila ne mijenjaju se radi očuvanja povijesti.
+- Profil instruktora vezan je uz aktivnog člana osoblja istog studija; owner
+  ili manager može imati profil bez promjene uloge. Arhivirani profil
+  neaktivnog računa može se tekstualno urediti, ali ne ponovno aktivirati.
+  Manager ne dobiva pristup upravljanju korisničkim računima/pozivnicama.
+- Deaktivacija kroz katalog **i kroz Osoblje** odbija draft/published termine
+  koji još nisu završili, kao i otvorene serije/dostupnost. Prvo treba zamijeniti
+  instruktora ili otkazati termine i zatvoriti aktivni raspored. Ti tokovi
+  dolaze u M2-04/M2-05/M2-09; sada se prikazuje jasna validacijska poruka.
+  Deaktivacija računa arhivira pripadajući profil i zadržava postojeće ukidanje sesija.
+- Smanjenje kapaciteta prostora ispod kapaciteta njegovih budućih/tekućih
+  draft/published termina odbija se. Arhiviranje čuva zapise i relacije.
+- Paketi ne dodjeljuju prava i ne naplaćuju novac. Izmjene proizvoda ne
+  prepisuju prethodne grantove. Javni DTO-ovi ostaju bez podataka osoblja;
+  novi katalog dostupan je samo ovlaštenim administratorima.
+
+Razvojne validacijske granice: trajanje 1–480 minuta, kapacitet 1–500,
+cijena 1–10.000.000 centi, paket 1–1.000 kredita i 1–3.650 dana valjanosti.
+Najava i otkazni rokovi su 1–525.600 minuta, horizont 1–365 dana, minimalna
+valjanost studijskog povrata 7–365 dana; najava mora biti kraća od horizonta.
+To su granice ovog razvojnog kataloga, a poslovne zadane vrijednosti iz M2
+backloga i dalje treba potvrditi prije stvarne prodaje.
+
+Provjere izvršene 10. listopada 2026.:
+
+```powershell
+php artisan test --compact tests/Feature/StudioCatalogTest.php tests/Feature/StudioAdministrationTest.php tests/Feature/BookingFoundationTest.php tests/Feature/PublicStudioTest.php
+composer types:check
+php vendor/bin/pint --dirty --format agent
+npm run types:check
+npx vp lint resources/js/components/CatalogForm.vue resources/js/pages/studio/Catalog.vue resources/js/layouts/StudioLayout.vue
+npm run build
+git diff --check
+```
+
+Rezultat: **200 testova prolazi, 1.344 assertiona** na MySQL-u, uključujući
+60 novih testova M2-03. PHPStan, Pint, Vue typecheck, ciljani lint/format i
+client/SSR build prolaze. Browser pregled manager računa na 1440×1000 i
+390×844: bez horizontalnog prelijevanja, navigacija tipkovnicom i serverska
+validacijska poruka uz očuvanje unosa. Owner mutacije provjerene su HTTP
+testovima, ne zasebnim browser tokom s owner 2FA. Build ima postojeća
+Fontaine/sourcemap upozorenja. `npm run check` prijavljuje postojeći format
+`docs/razvojni-backlog-m2.md`; ostavljen je bez masovnog reformatiranja.
+Puna zbirka i novi SSR runtime test nisu izvršeni; za punu regresiju pokreni
+`php artisan test --compact`.
+
+Sljedeći zadatak: **M2-04 — grupni raspored i serije**.
+
 ## Projektne upute
 
 - [AGENTS.md](AGENTS.md)

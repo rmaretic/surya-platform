@@ -6,6 +6,7 @@ use App\Http\Controllers\PlatformTenantController;
 use App\Http\Controllers\PublicStudioController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StaffInvitationController;
+use App\Http\Controllers\StudioCatalogController;
 use App\Http\Controllers\StudioController;
 use App\Http\Middleware\EnsureTwoFactorEnrolled;
 use App\Http\Middleware\ProtectTwoFactorAuthentication;
@@ -43,6 +44,16 @@ Route::prefix('studio')->name('studio.')
     ->middleware(['auth:web', 'verified', EnsureTwoFactorEnrolled::class, 'can:studio-administration'])
     ->group(function (): void {
         Route::get('profile', [StudioController::class, 'profile'])->name('profile.edit');
+        Route::get('catalog', [StudioCatalogController::class, 'index'])->name('catalog.index');
+        Route::post('catalog/training-types', [StudioCatalogController::class, 'storeTrainingType'])->name('catalog.training-types.store');
+        Route::patch('catalog/training-types/{trainingType}', [StudioCatalogController::class, 'updateTrainingType'])->name('catalog.training-types.update');
+        Route::post('catalog/rooms', [StudioCatalogController::class, 'storeRoom'])->name('catalog.rooms.store');
+        Route::patch('catalog/rooms/{room}', [StudioCatalogController::class, 'updateRoom'])->name('catalog.rooms.update');
+        Route::post('catalog/instructors', [StudioCatalogController::class, 'storeInstructor'])->name('catalog.instructors.store');
+        Route::patch('catalog/instructors/{instructor}', [StudioCatalogController::class, 'updateInstructor'])->name('catalog.instructors.update');
+        Route::post('catalog/packages', [StudioCatalogController::class, 'storePackage'])->name('catalog.packages.store');
+        Route::patch('catalog/packages/{package}', [StudioCatalogController::class, 'updatePackage'])->name('catalog.packages.update');
+        Route::post('catalog/rules', [StudioCatalogController::class, 'storeRules'])->name('catalog.rules.store');
         Route::patch('profile', [StudioController::class, 'updateProfile'])->name('profile.update');
         Route::get('staff', [StaffController::class, 'index'])->name('staff.index');
         Route::post('staff/invitations', [StaffController::class, 'invite'])->middleware('throttle:auth-sensitive')->name('staff.invite');

@@ -874,3 +874,50 @@ Stvarno izvršeno:
 
 Sljedeći konkretan zadatak: **M2-03 — katalog i verzionirana pravila**,
 uključujući backend ovlasti owner/manager i provjeru deaktivacije instruktora.
+
+## M2-03 — katalog i pravila
+
+Status (10. listopada 2026.): dovršeno za zadani opseg.
+
+- Dodan studio katalog s formama za vrste, trajanja/kapacitete, prostore,
+  instruktorske profile i owner-only pakete/cijene i rokove. Navigacija i
+  Wayfinder rute nadograđuju postojeći studio layout, bez novih ovisnosti.
+- Ovlasti se provjeravaju na backendu; manager ne može poslati owner-only
+  polja ni kroz drugi kataloški endpoint. Tenant binding, eksplicitni upiti,
+  validacija povezanih ID-eva i postojeći MySQL FK-ovi čuvaju izolaciju.
+- Svako spremanje rokova dodaje verziju s autorom/vremenom. Stari termini,
+  booking snapshotovi i grantovi ostaju netaknuti. Katalog se arhivira.
+  Način vrste i identitet instruktora ne mogu se prepisati; owner profil
+  ne mijenja owner ulogu. Javni DTO-ovi ne dobivaju privatne podatke osoblja.
+- Arhiviranje instruktora i deaktivacija kroz Osoblje provjeravaju buduće
+  i tekuće termine te aktivne serije/dostupnost. Deaktivacija računa arhivira
+  profil i ukida sesije. Kapacitet prostora štiti postojeće buduće termine.
+- Kataloške mutacije i deaktivacija koriste tenant coordination lock prije
+  ciljnih redaka. Zapisuje se audit; nema naplate, dodjele kredita ni slanja maila.
+
+Stvarno izvršeno:
+
+- `php artisan test --compact tests/Feature/StudioCatalogTest.php tests/Feature/StudioAdministrationTest.php tests/Feature/BookingFoundationTest.php tests/Feature/PublicStudioTest.php`:
+  **200 prolazi, 1.344 assertiona**, MySQL. Uključuje 60 novih testova kataloga:
+  tenant/role matrica, podmetnuti owner-only parametri i tuđi ID-evi,
+  granice validacije, deaktivacija i očuvanje snapshotova/povijesti.
+- `composer types:check`, `php vendor/bin/pint --dirty --format agent`,
+  `npm run types:check`, ciljani `npx vp lint` i format triju izmijenjenih
+  Vue datoteka, `npm run build` (client + SSR) te `git diff --check`: prolaze.
+- Browser: stvarna manager prijava, desktop 1440×1000 i mobile 390×844,
+  bez horizontalnog prelijevanja; tipkovnica, prazan katalog i odbijanje
+  privatnog kapaciteta dva uz vidljivu grešku/očuvan unos. Nema uspješnih
+  poslovnih upisa u razvojnu bazu. Uklonjen zaostali generirani `public/hot`
+  koji je pokazivao na ugašeni Vite; pregled obavljen iz builda.
+- `npm run check` zaustavlja postojeće formatiranje M2 backloga; dokument
+  nije masovno reformatiran. Fontaine/sourcemap build upozorenja postoje i
+  prije M2-03. Puna zbirka, novi SSR runtime prolaz i zaseban owner browser
+  tok nisu izvršeni. Owner backend pokriven je HTTP testovima s 2FA.
+
+Otvorene granice: zamjena/otkaz termina i uređivanje serija/dostupnosti
+pripadaju M2-04/M2-05/M2-09; M2-03 sigurno blokira deaktivaciju dok se ne
+riješe. Poslovne zadane vrijednosti potvrditi prije prodaje. Postojeći
+otvoreni M1 prihvati ostaju otvoreni. Za punu regresiju pokrenuti
+`php artisan test --compact`.
+
+Sljedeći konkretan zadatak: **M2-04 — grupni raspored i serije**.

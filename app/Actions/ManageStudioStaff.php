@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Auth\TrustedAuthUrl;
+use App\Models\InstructorProfile;
 use App\Models\StaffInvitation;
 use App\Models\Tenant;
 use App\Models\TenantAuditLog;
@@ -114,8 +115,14 @@ class ManageStudioStaff
     {
         Gate::forUser($actor)->authorize('deactivate', $staff);
         DB::transaction(function () use ($actor, $staff): void {
+            $this->lockTenant();
             $staff = User::query()->lockForUpdate()->findOrFail($staff->id);
             Gate::forUser($actor)->authorize('deactivate', $staff);
+            $profile = InstructorProfile::query()->where('user_id', $staff->id)->lockForUpdate()->first();
+            if ($profile !== null) {
+                app(EnsureInstructorCanDeactivate::class)->handle($profile, 'confirmed');
+                $profile->update(['archived_at' => $profile->archived_at ?? now()]);
+            }
             $staff->is_active = false;
             $staff->remember_token = null;
             $staff->save();

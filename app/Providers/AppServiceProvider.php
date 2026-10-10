@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Auth\AdministrativeAccess;
+use App\Policies\StudioCatalogPolicy;
 use App\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -35,6 +36,8 @@ class AppServiceProvider extends ServiceProvider
         });
         Gate::define('studio-administration', [AdministrativeAccess::class, 'studio']);
         Gate::define('customer-portal', [AdministrativeAccess::class, 'portal']);
+        Gate::define('studio-catalog', [StudioCatalogPolicy::class, 'manage']);
+        Gate::define('studio-pricing', [StudioCatalogPolicy::class, 'pricing']);
     }
 
     /**

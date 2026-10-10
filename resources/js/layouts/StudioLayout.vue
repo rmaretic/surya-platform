@@ -3,9 +3,14 @@ import { Link, usePage } from '@inertiajs/vue3';
 import { account, dashboard, home, logout } from '@/routes';
 import { edit } from '@/routes/studio/profile';
 import { index } from '@/routes/studio/staff';
+import { index as catalog } from '@/routes/studio/catalog';
 const page = usePage<{
     studioName: string;
-    studioAccess: { administration: boolean; manage: boolean };
+    studioAccess: {
+        administration: boolean;
+        manage: boolean;
+        catalog: boolean;
+    };
 }>();
 </script>
 <template>
@@ -45,6 +50,12 @@ const page = usePage<{
                         :href="index()"
                         class="hover:underline"
                         >Osoblje</Link
+                    >
+                    <Link
+                        v-if="page.props.studioAccess.catalog"
+                        :href="catalog()"
+                        class="hover:underline"
+                        >Katalog i pravila</Link
                     >
                     <Link :href="account()" class="hover:underline"
                         >Moj račun</Link
