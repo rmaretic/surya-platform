@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\BelongsToTenant;
+use Carbon\CarbonImmutable;
 use Database\Factories\ScheduleSeriesFactory;
 use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,6 +18,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $instructor_profile_id
  * @property int $room_id
  * @property int $booking_rule_version_id
+ * @property CarbonImmutable $starts_on
+ * @property CarbonImmutable|null $ends_on
+ * @property list<int> $weekdays
  */
 #[UseEloquentBuilder(TenantBuilder::class)]
 class ScheduleSeries extends Model

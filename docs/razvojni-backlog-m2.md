@@ -2,7 +2,7 @@
 
 Datum: 7. listopada 2026.  
 Izvor: specifikacija-platforme-v1.md (v1.6) i razvojni-backlog-m1.md.  
-Status (10. listopada 2026.): M2-01 pregledan i dokumentiran; M2-02 i M2-03 implementirani i provjereni na MySQL-u. Potpuni M1 prihvat ostaje otvoren prema njegovoj matrici. M2-04–M2-15 još nisu implementirani.
+Status (11. listopada 2026.): M2-01 pregledan i dokumentiran; M2-02–M2-04 implementirani i provjereni na MySQL-u. Potpuni M1 prihvat ostaje otvoren prema njegovoj matrici. M2-05–M2-15 još nisu implementirani.
 
 ## Cilj i granica faze
 
@@ -89,6 +89,8 @@ Admin uređuje vrste, trajanja, kapacitete, prostore i instruktore. Jedna lokaci
 ## M2-04 — grupni raspored i serije
 
 **Ovisnost:** M2-03. **Veza:** 12.1, AC06, AC12.
+
+**Status (11. listopada 2026.): dovršeno za opseg M2-04.** [Admin raspored](../resources/js/pages/studio/Schedule.vue), [transakcijske radnje](../app/Actions/ManageStudioSchedule.php), [DST razrješenje](../app/Actions/ResolveStudioLocalTime.php) i [45 novih testova](../tests/Feature/StudioScheduleTest.php). Idempotentno ručno generiranje osam tjedana nacrta, pojedinačne izmjene i podjela buduće serije uz očuvanje rezerviranih/otkazanih pojavljivanja. Konflikti resursa/buffera, kapacitet, tenant lock, audit i outbox za zamjene. Regresija: **245 prolazi, 1.787 assertiona**, MySQL; PHPStan, Pint, Vue typecheck, ciljani lint/format i client/SSR build prolaze. Desktop i mobilni manager prikaz pregledani; uspješne mutacije pokrivene HTTP testovima. [Ugovori i granice](../README.md#grupni-raspored-i-serije--m2-04): slanje obavijesti ostaje M2-12, rezervirani otkazi M2-09, višeprocesni booking race testovi M2-07/M2-14. Nema novih migracija ni ovisnosti.
 
 Pojedinačni termin i tjedna serija; generator idempotentan uz unique ključ pojavljivanja. Otkazani termin ne generira se ponovno. Lokalni sat određuje ponavljanje, UTC instanti stvarno trajanje.
 

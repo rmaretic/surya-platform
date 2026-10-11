@@ -4,6 +4,7 @@ import { account, dashboard, home, logout } from '@/routes';
 import { edit } from '@/routes/studio/profile';
 import { index } from '@/routes/studio/staff';
 import { index as catalog } from '@/routes/studio/catalog';
+import { index as schedule } from '@/routes/studio/schedule';
 const page = usePage<{
     studioName: string;
     studioAccess: {
@@ -56,6 +57,12 @@ const page = usePage<{
                         :href="catalog()"
                         class="hover:underline"
                         >Katalog i pravila</Link
+                    >
+                    <Link
+                        v-if="page.props.studioAccess.catalog"
+                        :href="schedule()"
+                        class="hover:underline"
+                        >Raspored</Link
                     >
                     <Link :href="account()" class="hover:underline"
                         >Moj račun</Link

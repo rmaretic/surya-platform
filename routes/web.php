@@ -8,6 +8,7 @@ use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StaffInvitationController;
 use App\Http\Controllers\StudioCatalogController;
 use App\Http\Controllers\StudioController;
+use App\Http\Controllers\StudioScheduleController;
 use App\Http\Middleware\EnsureTwoFactorEnrolled;
 use App\Http\Middleware\ProtectTwoFactorAuthentication;
 use Illuminate\Support\Facades\Route;
@@ -45,6 +46,12 @@ Route::prefix('studio')->name('studio.')
     ->group(function (): void {
         Route::get('profile', [StudioController::class, 'profile'])->name('profile.edit');
         Route::get('catalog', [StudioCatalogController::class, 'index'])->name('catalog.index');
+        Route::get('schedule', [StudioScheduleController::class, 'index'])->name('schedule.index');
+        Route::post('schedule/sessions', [StudioScheduleController::class, 'store'])->name('schedule.store');
+        Route::patch('schedule/sessions/{session}', [StudioScheduleController::class, 'update'])->name('schedule.update');
+        Route::post('schedule/series', [StudioScheduleController::class, 'storeSeries'])->name('schedule.series.store');
+        Route::post('schedule/series/{series}/generate', [StudioScheduleController::class, 'generate'])->name('schedule.series.generate');
+        Route::post('schedule/series/{series}/close', [StudioScheduleController::class, 'closeSeries'])->name('schedule.series.close');
         Route::post('catalog/training-types', [StudioCatalogController::class, 'storeTrainingType'])->name('catalog.training-types.store');
         Route::patch('catalog/training-types/{trainingType}', [StudioCatalogController::class, 'updateTrainingType'])->name('catalog.training-types.update');
         Route::post('catalog/rooms', [StudioCatalogController::class, 'storeRoom'])->name('catalog.rooms.store');

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\BelongsToTenant;
+use Carbon\CarbonImmutable;
 use Database\Factories\ClassSessionFactory;
 use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $room_id
  * @property int $booking_rule_version_id
  * @property int|null $schedule_series_id
+ * @property CarbonImmutable $starts_at
+ * @property CarbonImmutable $ends_at
  */
 #[UseEloquentBuilder(TenantBuilder::class)]
 class ClassSession extends Model

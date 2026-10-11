@@ -92,7 +92,7 @@ function updateText(key: string, event: Event) {
                 v-if="field.type === 'multiple'"
                 class="text-xs text-muted-foreground"
             >
-                Možete odabrati više vrsta (Ctrl/Cmd ili dodir na mobitelu).
+                Možete odabrati više opcija (Ctrl/Cmd ili dodir na mobitelu).
             </p>
             <InputError
                 :id="`${id}-${field.key}-error`"

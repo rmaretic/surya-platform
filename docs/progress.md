@@ -921,3 +921,47 @@ otvoreni M1 prihvati ostaju otvoreni. Za punu regresiju pokrenuti
 `php artisan test --compact`.
 
 Sljedeći konkretan zadatak: **M2-04 — grupni raspored i serije**.
+
+## M2-04 — grupni raspored i serije (11. listopada 2026.)
+
+Status: **implementirano i provjereno za opseg M2-04**.
+
+- Dodani `ManageStudioSchedule`, `ResolveStudioLocalTime`, zaštićeni studio
+  endpointovi i Vue stranica Raspored. Owner/manager upravljaju grupnim
+  terminima, tjednim serijama, generiranjem nacrta i zatvaranjem serije.
+- Lokalno ponavljanje i UTC trajanje, osmotjedni horizont, idempotentan
+  occurrence ključ, očuvanje otkazanih/premještenih pojavljivanja i eksplicitni
+  DST ispravci. Nema novog schedulera, migracija, ovisnosti ili javnog bookinga.
+- Izmjena jednog ili budućih nerazerviranih termina, podjela serije uz
+  očuvanje rezerviranih/otkazanih zapisa. Kapacitet i resursni konflikti
+  uključuju confirmed rezervacije i buffere. Sve mutacije imaju tenant lock,
+  transakciju, ograničeni retry i audit; zastarjela verzija forme odbija se.
+- Rezervirani termini čuvaju vrijeme, vrstu i trajanje. Zamjena resursa
+  zapisuje outbox po bookingu/verziji; isporuka je M2-12. Otkaz rezerviranog
+  termina i povrati ostaju M2-09. Privatni endpointovi ostaju M2-05/M2-07.
+
+Izvršene provjere:
+
+- `php artisan test --compact tests/Feature/StudioScheduleTest.php tests/Feature/StudioCatalogTest.php tests/Feature/StudioAdministrationTest.php tests/Feature/BookingFoundationTest.php tests/Feature/PublicStudioTest.php`:
+  **245 prolazi, 1.787 assertiona**, MySQL, uključujući 45 novih testova.
+  Pokriveni tenant/role/2FA, oba DST prijelaza, ispravci, ponovljeni generator,
+  kapacitet, konflikti, rollback serije, zaključavanje i outbox deduplikacija.
+- PHPStan (`composer types:check`), Pint (`--dirty --format agent`), Vue
+  typecheck, ciljani Vue lint/format, `npm run build` (client + SSR) i
+  `git diff --check`: prolaze. Postojeća build upozorenja nisu nova greška.
+- Browser: manager, desktop 1440×1000 i mobilni 390×844; prazan raspored,
+  obrazac tjedne serije, bez horizontalnog prelijevanja, tipkovnički fokus.
+  Neispravan datumski raspon prikazuje grešku uz očuvan unos.
+  Nema poslovnih upisa u razvojnu bazu. Uočen i ispravljen dvostruki layout.
+  Zaostali `public/hot` prema ugašenom Viteu sačuvan u lokalnom log direktoriju.
+  Privremeni limit automatskog odobravanja 10. listopada prekinuo je mobilni
+  pregled; nastavljen je i izvršen 11. listopada.
+
+Nije provjereno: puna zbirka, novi živi SSR, višeprocesni race scenariji
+(M2-07/M2-14) i zaseban owner browser tok s 2FA. HTTP testovi pokrivaju owner
+ovlasti. Puni browser tok s popunjenim katalogom ostaje dio M2 integracijskog
+pregleda; backend mutacije provjerene su na testnoj bazi. Ugovori i stvarne
+naredbe dokumentirani su u README-u. Postojeći otvoreni M1 prihvati ostaju.
+
+Sljedeći konkretan korak: **M2-05 — privatna dostupnost**. Za punu regresiju
+pokrenuti `php artisan test --compact`.

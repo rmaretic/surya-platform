@@ -1263,3 +1263,68 @@ Sljedeći zadatak: **M2-04 — grupni raspored i serije**.
 Git ima remote `origin` za `rmaretic/surya-platform`. `.env`, lokalni agent
 config, ovisnosti i build artefakti se ne
 verzioniraju. AGENTS.md je uključen u verzioniranje kao zajednička uputa.
+
+## Grupni raspored i serije — M2-04
+
+Owner i manager koriste **Raspored** u studio administraciji (`/studio/schedule`).
+Katalog prvo mora imati aktivnu grupnu vrstu, instruktora, prostor i ownerovu
+verziju pravila. Mogu dodati nacrt/objavljeni termin, urediti jedan termin,
+otkazati nerazervirani termin uz razlog te stvoriti i zatvoriti tjednu seriju.
+Privatni termini nisu dostupni za uređivanje kroz ove endpointove.
+
+- Seriju treba zasebno generirati gumbom **Generiraj termine**. Generator stvara
+  nacrte od danas do isključive granice danas + 8 tjedana, unutar datuma serije.
+  Nema novog schedulera ni automatske objave. Ponovljeni poziv preskače sva
+  postojeća pojavljivanja, uključujući otkazana i pojedinačno premještena.
+  Unique ključ čine tenant, serija i izvorni lokalni datum pojavljivanja.
+- Ponavljanje koristi IANA zonu serije, a trajanje stvarne UTC minute. Za
+  nepostojeće/dvostruko DST vrijeme cijelo generiranje se poništava s porukom.
+  U obrascu generiranja dodaj ispravak izvornog datuma: novo lokalno vrijeme
+  i, za dvostruko vrijeme, izričit UTC pomak. Uspješno pojavljivanje zadržava
+  izvorni ključ; ispravak nije potrebno ponovno slati.
+- **Ovaj i budući nerazervirani termini** zadržava dane tjedna i datum odabranog
+  pojavljivanja. Nastaje nasljedna serija s novim vremenom, trajanjem,
+  kapacitetom i resursima. Ranija serija završava prije tog datuma (ili se
+  zatvara ako je odabran njezin prvi datum). Postojeća buduća pojavljivanja
+  prenose ključ u nasljednu seriju; rezervirani i otkazani termini zadržavaju
+  poslovna polja. Daljnje generiranje koristi novi predložak. Za drukčije dane
+  tjedna zatvori staru seriju i dodaj novu; postojeći termini ostaju sačuvani.
+- Rezerviranom terminu ne mijenjaju se vrijeme, trajanje, vrsta ili status.
+  Otkaz/zamjena s povratom prava dolazi u M2-09. Zamjena instruktora/prostora
+  dopuštena je bez konflikta i u istoj transakciji zapisuje verzionirani
+  `session.resources_changed` outbox događaj za svaki confirmed booking.
+  M2-12 tek dodaje slanje; ovaj zadatak ne šalje email.
+- Kapacitet ne pada ispod confirmed broja niti prelazi kapacitet prostora.
+  Draft/published termini blokiraju instruktora i prostor, uključujući
+  privatne buffere. Jednaki rubovi zaštićenih intervala dopušteni su.
+- Sve radnje, uključujući generator i zatvaranje serije, prvo zaključavaju
+  postojeći `tenants` red `FOR UPDATE`. Ciljni redci/batch obrađuju se unutar
+  iste transakcije, s najviše tri pokušaja pri deadlocku. Konflikt poništava
+  cijelu izmjenu, audit i outbox. Forma šalje verziju radi odbijanja zastarjele
+  izmjene. M2-07 mora nastaviti isti koordinacijski protokol.
+
+Nema novih migracija ili ovisnosti. Provjere 10.–11. listopada 2026.:
+
+```powershell
+php artisan test --compact tests/Feature/StudioScheduleTest.php tests/Feature/StudioCatalogTest.php tests/Feature/StudioAdministrationTest.php tests/Feature/BookingFoundationTest.php tests/Feature/PublicStudioTest.php
+composer types:check
+php vendor/bin/pint --dirty --format agent
+npm run types:check
+npx vp lint resources/js/pages/studio/Schedule.vue resources/js/layouts/StudioLayout.vue resources/js/components/CatalogForm.vue
+npm run build
+git diff --check
+```
+
+**245 testova prolazi, 1.787 assertiona**, uključujući 45 novih testova rasporeda
+na MySQL-u. PHPStan, Pint, Vue typecheck, ciljani lint/format i client/SSR build
+prolaze. Browser pregled manager računa obuhvaća desktop 1440×1000, mobilni
+390×844, prazan raspored, obrazac serije i tipkovnički fokus. Nisu stvarani
+poslovni podaci u razvojnoj bazi; uspješne mutacije provjerene su HTTP testovima.
+Zaostali `public/hot` prema ugašenom Viteu sačuvan je u lokalnom `storage/logs`
+i uklonjen iz javnog direktorija radi pregleda builda. Nova Vite sesija ga
+ponovno generira. Postojeća Fontaine/sourcemap upozorenja ostaju.
+
+Nisu izvršeni puna zbirka, novi živi SSR test ni race testovi zasebnim
+procesima. Protokol lockova i rollback provjereni su na MySQL-u; konkurentni
+booking scenariji pripadaju M2-07/M2-14. Za punu regresiju pokreni
+`php artisan test --compact`. Sljedeći zadatak: **M2-05 — privatna dostupnost**.
