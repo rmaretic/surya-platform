@@ -61,13 +61,13 @@ class ManageStudioCancellation
                 throw ValidationException::withMessages(['preview_token' => 'Termin ili rezervacije su izmijenjeni. Osvježite pregled prije otkaza.']);
             }
             $bookings = $session->bookings()->where('status', 'confirmed')->orderBy('id')->lockForUpdate()->get();
-            $session->forceFill(['status' => 'cancelled', 'cancellation_reason' => $data['reason'], 'version' => $session->version + 1])->save();
+            $session->forceFill(['status' => 'cancelled', 'cancelled_at' => now(), 'cancellation_reason' => $data['reason'], 'version' => $session->version + 1])->save();
             foreach ($bookings as $booking) {
                 $this->cancelBooking($actor, $booking, 'studio_cancelled');
                 $this->refund($actor, $booking, $data['reason']);
                 $this->outbox($booking, $session, 'session.cancelled', $data['reason']);
             }
-            $this->audit($actor, 'studio.session_cancelled', 'class_sessions', $session->id, $data, $fingerprint, $bookings->map(fn (Booking $booking): int => $booking->id)->values()->all());
+            $this->audit($actor, 'studio.session_cancelled', 'class_sessions', $session->id, $data, $fingerprint, array_values($bookings->map(fn (Booking $booking): int => $booking->id)->all()));
         }, 3);
     }
 
@@ -89,7 +89,7 @@ class ManageStudioCancellation
             if ($booking->status === 'confirmed') {
                 $this->cancelBooking($actor, $booking, 'owner_exception');
                 if ($session->starts_at->gt(now()) && $session->trainingType()->firstOrFail()->mode === 'private') {
-                    $session->forceFill(['status' => 'cancelled', 'cancellation_reason' => $data['reason'], 'version' => $session->version + 1])->save();
+                    $session->forceFill(['status' => 'cancelled', 'cancelled_at' => now(), 'cancellation_reason' => $data['reason'], 'version' => $session->version + 1])->save();
                 }
             }
             $this->refund($actor, $booking, $data['reason']);

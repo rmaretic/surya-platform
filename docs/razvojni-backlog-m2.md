@@ -2,7 +2,7 @@
 
 Datum: 7. listopada 2026.  
 Izvor: specifikacija-platforme-v1.md (v1.6) i razvojni-backlog-m1.md.  
-Status (15. listopada 2026.): M2-01 pregledan i dokumentiran; M2-02–M2-05 implementirani i provjereni na MySQL-u. M2-06 implementiran i provjeren, uključujući vizualni prihvat. M2-07–M2-08 implementirani i provjereni, uključujući višeprocesne MySQL testove. Potpuni M1 prihvat ostaje otvoren prema njegovoj matrici. M2-09–M2-15 još nisu implementirani.
+Status (15. listopada 2026.): M2-01 pregledan i dokumentiran; M2-02–M2-05 implementirani i provjereni na MySQL-u. M2-06 implementiran i provjeren, uključujući vizualni prihvat. M2-07–M2-09 implementirani i provjereni, uključujući višeprocesne MySQL testove i administrativni prikaz M2-09. Potpuni M1 prihvat ostaje otvoren prema njegovoj matrici. M2-10–M2-15 još nisu implementirani.
 
 ## Cilj i granica faze
 
@@ -149,6 +149,8 @@ Move vrijedi za ekvivalentnu vrstu, isti trošak i grant valjan na novi datum. O
 ## M2-09 — otkaz studija i iznimke
 
 **Ovisnost:** M2-08. **Veza:** 12.3, 13.4, AC12.
+
+**Status (15. listopada 2026.): dovršeno za opseg M2-09.** [Administrativni pregled](../resources/js/pages/studio/Cancellations.vue), [atomski otkaz i owner iznimke](../app/Actions/ManageStudioCancellation.php), zaštita od zastarjelog pregleda, reversal i zasebna kompenzacija samo vraćenog kredita, audit/outbox i idempotencija. **27 funkcionalnih testova / 260 assertiona** i **3 nova višeprocesna scenarija / 45 assertiona** prolaze; završna regresija sedam datoteka: **279 testova / 2.251 assertion na MySQL-u**. PHPStan, Pint, Vue typecheck, ciljani lint/format, client/SSR build, pregled ruta i diff provjera prolaze. Stvarni manager prikaz te popunjeni desktop/mobilni prikaz s izoliranim testnim propsima pregledani; mutacije pokrivene HTTP testovima. [Ugovor, odluke i granice](../README.md#otkaz-studija-i-owner-iznimke--m2-09). Nema novih migracija ili ovisnosti. Isporuka outboxa ostaje M2-12; puna zbirka i zasebna SSR regresija nisu izvršene.
 
 Owner/manager otkazuje cijeli termin uz razlog i pregled pogođenih. Jedna kratka transakcija otkazuje termine/bookinge, vraća prava i sprema audit/outbox. Email naknadno. Za male yoga grupe batch atomski; masovne operacije preko mnogo termina izvan M2.
 

@@ -19,6 +19,7 @@ type Booking = {
 const props = defineProps<{
     date: string;
     timezone: string;
+    operationKey: string;
     sessions: { id: number; name: string; status: string; time: string }[];
     selected: {
         id: number;
@@ -47,7 +48,7 @@ const statuses: Record<string, string> = {
     confirmed: 'Potvrđeno',
 };
 watch(
-    () => props.selected,
+    () => props.selected?.id,
     () => {
         form.reset();
         form.clearErrors();
@@ -56,16 +57,20 @@ watch(
 );
 function submit() {
     if (!props.selected) return;
-    form.operation_key ||= crypto.randomUUID();
+    form.operation_key ||= props.operationKey;
     if (exception.value) {
         form.transform(({ reason, operation_key }) => ({
             reason,
             operation_key,
-        })).post(refund.url(exception.value.id), { preserveScroll: true });
+        })).post(refund.url(exception.value.id), {
+            preserveScroll: true,
+            onSuccess: () => chooseException(null),
+        });
     } else {
         form.preview_token = props.selected.preview_token;
         form.transform((data) => data).post(cancel.url(props.selected.id), {
             preserveScroll: true,
+            onSuccess: () => chooseException(null),
         });
     }
 }

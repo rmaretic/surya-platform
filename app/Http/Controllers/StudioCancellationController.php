@@ -11,6 +11,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -26,6 +27,7 @@ class StudioCancellationController extends Controller
 
         return Inertia::render('studio/Cancellations', [
             'date' => $date->format('Y-m-d'), 'timezone' => $tenant->timezone,
+            'operationKey' => (string) Str::uuid(),
             'sessions' => ClassSession::query()->where('tenant_id', $tenant->id)
                 ->whereBetween('starts_at', [$date->utc(), $date->endOfDay()->utc()])
                 ->with('trainingType:id,name')->orderBy('starts_at')->orderBy('id')->get()

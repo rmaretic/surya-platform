@@ -1093,3 +1093,42 @@ ostaju M2-12. Puna zbirka, frontend build, browser i živi SSR nisu izvršeni u
 ovom backend inkrementu. Postojeći otvoreni M1 prihvati ostaju.
 Sljedeći konkretan korak: **M2-09 — otkaz studija i owner iznimke**.
 Za punu regresiju pokrenuti `php artisan test --compact`.
+
+## M2-09 — otkaz studija i iznimke (15. listopada 2026.)
+
+Status: **implementirano i provjereno za opseg M2-09**.
+
+- Administracija **Otkazi i iznimke**: grupni/privatni termini po lokalnom
+  datumu, pregled pogođenih rezervacija i posljedica, obvezan razlog.
+  Owner/manager otkazuje budući termin; samo owner radi pojedinačni iznimni
+  povrat, uključujući kasni otkaz i rezervaciju nakon početka.
+- `ManageStudioCancellation` ponovno autorizira pod tenant lockom. Termin,
+  bookingi, reversal/kompenzacija, audit i outbox jedna su transakcija.
+  Promjena potvrđenih rezervacija ili verzije termina traži novi pregled;
+  retry identičnog zahtjeva ne duplicira povrat. Već vraćen/prenesen kredit
+  odbija novu iznimku. Privatni budući interval oslobađa se otkazom.
+- Samo vraćeni kredit po potrebi prelazi u zaseban kompenzacijski grant
+  povezan s debitom i jedinstvenom operacijom. Izvorni istek, nepovezani
+  krediti i postojeća evidencija dolaska ostaju sačuvani. Nema automatskog
+  premještanja, naplate, novčanog refunda ili slanja emailova.
+- Odluka: owner iznimka koristi isti minimum valjanosti kao otkaz studija:
+  najmanje sedam kalendarskih dana prema booking snapshotu, uz očuvanje
+  duljeg izvornog isteka. DST granica i nepromjenjivost snapshota testirane.
+- Ciljano **27 funkcionalnih testova / 260 assertiona** i **3 nova
+  višeprocesna scenarija / 45 assertiona** prolaze. Završna regresija
+  bookinga, otkaza/movea, konkurentnosti, kredita, dostupnosti i rasporeda:
+  **279 testova / 2.251 assertion na MySQL-u**. PHPStan, Pint, Vue typecheck,
+  ciljani lint/format, client/SSR build, tri nove rute i diff provjera prolaze.
+- Stvarni manager prikaz provjeren nakon prijave; popunjeni desktop/mobilni
+  prikaz, owner obrazac, validacijska poruka, očuvanje razloga i tipkovnica
+  pregledani s izoliranim, označenim testnim propsima i presretnutim mutacijama.
+  Nema horizontalnog preljeva na 390 px. HTTP testovi potvrđuju stvarne
+  mutacije i tenant/role granice. Testna presretanja uklonjena nakon pregleda.
+- README i backlog ažurirani. Nema novih migracija ili ovisnosti; zatečene
+  izmjene sačuvane. Pokrenuti postojeći lokalni MySQL i Vite/HTTP servisi.
+
+Isporuka obavijesti ostaje M2-12. Puna zbirka i zasebna SSR regresija nisu
+izvršene; client/SSR build jest. Razvojni poslovni podaci nisu mijenjani.
+Postojeći otvoreni M1 prihvati ostaju. Sljedeći konkretan korak: **M2-10 —
+raspored i portal na oba dizajna**. Za punu regresiju pokrenuti
+`php artisan test --compact`.

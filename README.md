@@ -1639,3 +1639,86 @@ Puna zbirka, frontend build, browser i živi SSR nisu pokretani: inkrement
 mijenja backend i nema novog korisničkog sučelja. Za punu regresiju pokreni
 `php artisan test --compact`. Sljedeći razvojni zadatak: **M2-09 — otkaz
 studija i iznimke**.
+
+## Otkaz studija i owner iznimke — M2-09
+
+U studio navigaciji **Otkazi i iznimke** prikazuje grupne i privatne termine
+odabranog lokalnog dana, uključujući povijest. Odabir termina prikazuje
+polaznike, potvrđene rezervacije pogođene otkazom i valjanost vraćenog kredita.
+Owner/manager otkazuje budući nacrt ili objavljeni termin uz obvezan razlog.
+Samo owner može odobriti pojedinačni iznimni povrat, uključujući kasni otkaz
+i rezervaciju nakon početka. Potvrđena rezervacija tada se otkazuje; postojeća
+evidencija dolaska ostaje sačuvana. Zamjenski termin i novi upis zasebne su radnje.
+
+### HTTP ugovor i transakcija
+
+- `GET /studio/cancellations?date=YYYY-MM-DD&session=ID`: zaštićen Inertia
+  pregled s minimalnim podacima polaznika (ID rezervacije, ime i posljedice).
+- `POST /studio/cancellations/sessions/{session}`: `operation_key` (UUID),
+  `reason` (do 2.000 znakova) i `preview_token` iz pregleda.
+- `POST /studio/cancellations/bookings/{booking}/refund`: owner-only;
+  `operation_key` i `reason`. Uspješne mutacije vraćaju redirect s potvrdom.
+
+`ManageStudioCancellation` ponovno autorizira pod tenant coordination lockom.
+Otkaz termina, svi potvrđeni bookingi, ledger, audit i outbox jedan su atomski
+batch. Broj/identitet potvrđenih rezervacija i verzija termina ulaze u token
+pregleda: novi booking ili izmjena termina zahtijevaju osvježavanje prije
+potvrde. Ako otkaz prvi dobije lock, naknadni booking odbija otkazani termin.
+Isti ključ i identičan zahtjev vraćaju isti rezultat bez dodatnih zapisa;
+promijenjen zahtjev s istim ključem odbija se. Već vraćen/prenesen kredit ne
+može dobiti novu owner iznimku. Deadlock retry ograničen je na tri pokušaja.
+
+Povrat zapisuje reversal izvornog debita. Ako izvorni grant traje dovoljno
+dugo, kredit ostaje na njemu s izvornim istekom. Inače se samo vraćena jedinica
+append-only korekcijom prenosi na zaseban grant povezan s izvornim debitom:
+`compensates_credit_entry_id` i postojeći unique constraint sprečavaju duplikat.
+Grant kopira dopuštene vrste izvornog prava, ima jedan kredit i nultu cijenu;
+izvor je `complimentary` uz razlog i autora, bez lažne naplate. Izvorni istek
+i ostali krediti ostaju nepromijenjeni.
+
+Odluka za M2-09: i owner iznimka koristi isti minimum valjanosti kao studijski
+povrat — `max(7, studio_refund_validity_days)` kalendarskih dana u vremenskoj
+zoni iz booking snapshota, računato od povrata. Dulji izvorni istek ostaje.
+Postojeće promjene pravila nisu retroaktivne. Standardni korisnički otkaz iz
+M2-08 i dalje vraća samo izvorni kredit s izvornim istekom.
+
+Outbox bilježi `session.cancelled` po pogođenom bookingu odnosno
+`booking.refund_exception` za iznimku. Isporuka obavijesti ostaje M2-12;
+nema slanja emailova, refundiranja novca ni financijskih dokumenata.
+Nema novih migracija ili ovisnosti.
+
+### Provjere M2-09
+
+```sh
+docker compose up -d mysql-testing
+php artisan test --compact tests/Feature/StudioCancellationTest.php
+php artisan test --compact tests/Feature/BookingConcurrencyTest.php --filter="studio cancellation|studio cancellation retries|owner exceptions"
+php artisan test --compact tests/Feature/StudioCancellationTest.php tests/Feature/ManageBookingTest.php tests/Feature/CreateBookingTest.php tests/Feature/BookingConcurrencyTest.php tests/Feature/StudioCreditTest.php tests/Feature/StudioAvailabilityTest.php tests/Feature/StudioScheduleTest.php
+php vendor/bin/phpstan analyse --memory-limit=1G
+php vendor/bin/pint --dirty --format agent
+npm run types:check
+npm exec -- vp lint resources/js/pages/studio/Cancellations.vue resources/js/layouts/StudioLayout.vue
+npm exec -- vp fmt resources/js/pages/studio/Cancellations.vue resources/js/layouts/StudioLayout.vue
+npm run build
+php artisan route:list --path=studio/cancellations --except-vendor
+git diff --check
+```
+
+Ciljano **27 funkcionalnih testova / 260 assertiona** i **3 nova višeprocesna
+scenarija / 45 assertiona** prolaze na MySQL-u. PHPStan, Pint, Vue typecheck,
+ciljani lint/format, client/SSR build i pregled ruta prolaze. Build prijavljuje
+postojeća upozorenja za opcionalni fontaine i Inertia sourcemap.
+
+Stvarni manager prikaz provjeren je nakon prijave. Popunjeni prikaz, owner
+obrazac, validacijska poruka, očuvanje unesenog razloga i tipkovnica pregledani
+su s označenim izoliranim testnim Inertia propsima i presretnutim mutacijama,
+na desktopu i širini 390 px, bez horizontalnog preljeva. Uspješne poslovne
+mutacije provjerene su HTTP testovima, bez poslovnih upisa u razvojnu bazu.
+Testna presretanja uklonjena su nakon pregleda. Zatečeni ugašeni Vite server
+pokrenut je za lokalni pregled.
+
+Završna regresija navedenih sedam datoteka: **279 testova / 2.251 assertion
+prolazi na MySQL-u**, uključujući ukupno 16 višeprocesnih scenarija. Puna
+zbirka i zasebna SSR regresija nisu izvršene. Za punu regresiju pokreni
+`php artisan test --compact`. Sljedeći zadatak: **M2-10 — raspored i portal
+na oba dizajna**.
