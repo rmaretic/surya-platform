@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property array{minimum_notice_minutes: int, booking_horizon_days: int, group_cancellation_minutes: int, private_cancellation_minutes: int, studio_refund_validity_days: int, timezone: string} $rules_snapshot
  */
 #[UseEloquentBuilder(TenantBuilder::class)]
-#[Hidden(['active_slot'])]
+#[Hidden(['active_slot', 'request_fingerprint'])]
 class Booking extends Model
 {
     /** @use HasFactory<BookingFactory> */

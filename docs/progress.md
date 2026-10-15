@@ -1,6 +1,6 @@
 # Napredak
 
-Aktualni inkrement: [M2-01 — pregled M1 i mapa nastavka](pregled-m1-za-m2.md).
+Aktualni inkrement: **M2-08 — otkaz i premještanje**.
 Prethodni pregled: [prihvat svih M1 zadataka](razvojni-backlog-m1.md#pregled-prihvata--8-listopada-2026)
 i [predaja M1-14](#m1-14--demonstracija-i-predaja). Zapisi ispod su datirani
 rezultati pojedinih inkremenata; ranije navedene buduće funkcionalnosti i
@@ -965,3 +965,131 @@ naredbe dokumentirani su u README-u. Postojeći otvoreni M1 prihvati ostaju.
 
 Sljedeći konkretan korak: **M2-05 — privatna dostupnost**. Za punu regresiju
 pokrenuti `php artisan test --compact`.
+
+## M2-05 — privatna dostupnost (12. listopada 2026.)
+
+Status: **implementirano i provjereno za opseg M2-05**.
+
+- Admin stranica, tjedni prozori, datumske iznimke i zatvaranje; trajanje,
+  korak, bufferi, verzionirana najava/horizont. Tenant lock, audit, stabilni
+  operation key, revizija forme i odbijanje konflikta s postojećim terminom.
+- Pregled dnevnih slotova oduzima grupno/privatno zauzeće instruktora i
+  prostora. Jednaki rubovi dopušteni; DST nejasnoće daju upozorenje i traže
+  iznimku. Nema rezervacije, vanjskog kalendara, migracija ili novih paketa.
+- **48 novih testova / 355 assertiona prolazi na MySQL-u**. PHPStan, Pint,
+  Vue typecheck, ciljani format/lint, client/SSR build i diff provjera prolaze.
+- Regresija dostupnosti, rasporeda, kataloga, administracije, podatkovnog
+  temelja i javnih DTO-ova: **293 testa / 2.142 assertiona prolazi**, MySQL.
+- Browser: manager, 1440×1000 i 390×844, prazan pregled/obrazac, tipkovnica,
+  datum filter i bez horizontalnog prelijevanja. Uspješne mutacije i puni
+  slotovi provjereni HTTP testovima; razvojna baza nije punjena fixtureima.
+- Privremeni limit automatskog odobravanja ranije je blokirao frontend
+  provjere; nakon nastavka izvršene su. Ugašene lokalne Compose baze i PHP
+  server ponovno su pokrenuti bez brisanja podataka. Postojeća build
+  upozorenja ostaju. Pravila i stvarne naredbe zapisani su u README-u.
+
+Puna zbirka i živi SSR nisu izvršeni; privatni atomski booking/race test
+pripada M2-07/M2-14, javni tok M2-10. Postojeći otvoreni M1 prihvati ostaju.
+Sljedeći korak: **M2-06 — grantovi i kreditni ledger**. Za punu regresiju
+pokrenuti `php artisan test --compact`.
+
+## M2-06 — grantovi i kreditni ledger (12. listopada 2026.)
+
+Status: **implementirano i provjereno za opseg M2-06**.
+
+- Owner administracija Paketi i krediti, dokumentirani demo/external_purchase/
+  complimentary izvori, snapshot proizvoda i dopuštenih vrsta, valjanost od
+  dodjele u lokalnim kalendarskim danima. Nema platformskih naplata ili prihoda.
+- Tenant lock, ponovna provjera owner ovlasti, idempotentna dodjela i korekcija
+  s auditom. Append-only ledger, nenegativan saldo, zaštita rezerviranih prava
+  te zasebni raspoloživi, rezervirani i istekli krediti.
+- Interne debit/reversal radnje zahtijevaju vanjsku booking transakciju.
+  Provjeravaju tenant, polaznika, pokriće vrste/datuma i saldo te dedupliciraju
+  booking/debit. Booking i politika otkaza ostaju M2-07–M2-09; nema novih
+  endpointova za booking ni migracija ili ovisnosti.
+- **46 novih testova / 307 assertiona prolazi na MySQL-u**. Završna regresija
+  s dostupnosti, rasporedom, katalogom, administracijom, podatkovnim temeljem
+  i javnim DTO-ovima: **339 testova / 2.449 assertiona prolazi**.
+- PHPStan, Pint, Vue typecheck, ciljani Vue format/lint, client/SSR build,
+  pregled triju ruta i `git diff --check` prolaze. Stvarne naredbe i ugovori
+  zabilježeni su u README-u. Zatečene M2-05 izmjene sačuvane su.
+
+Vizualno provjereno: stvarni owner pregled nakon korisnikove 2FA prijave,
+desktop 1440×1000 i mobitel 390×844, prazno stanje, navigacija i tipkovnički
+fokus. Popunjeni prikaz, obrasci dodjele/korekcije i kreditna povijest pregledani
+su u zasebnoj kartici s jasno označenim testnim propsima i blokiranim mutacijama;
+bez horizontalnog prelijevanja ili JS grešaka. Nema poslovnih upisa u razvojnu
+bazu; mutacije su testirane HTTP testovima. Prvotni prekinuti fixture pokušaj
+nakon nastavka je dovršen; privremeni limit automatskog odobravanja više nije
+blokada. Lokalni screenshotovi su u `storage/logs/m2-06-browser`.
+
+Puna zbirka, zaseban živi SSR i višeprocesni booking race nisu izvršeni;
+booking race pripada M2-07/M2-14. Postojeći otvoreni M1 prihvati ostaju.
+Sljedeći korak: **M2-07 — atomski booking**. Za punu regresiju pokrenuti
+`php artisan test --compact`.
+
+## M2-07 — atomski booking (14. listopada 2026.)
+
+Status: **implementirano i provjereno za opseg M2-07**.
+
+- Zajednički `CreateBooking` i zaštićeni `POST /bookings` za vlastiti customer
+  booking te owner/manager ručni upis. Server bira važeći kredit po isteku/ID-u,
+  provjerava tenant, aktivnost, ovlasti, objavu, rok, kapacitet, preklop polaznika
+  i resurse s bufferima. Podmetnuti tenant/user/grant ne daje pristup.
+- Tenant coordination lock, stabilni ciljni lockovi i najviše tri pokušaja pri
+  deadlocku. Privatni slot ponovno se računa pod lockom. Termin, booking,
+  debit, snapshot, audit i outbox potvrde jedna su transakcija; nema slanja.
+- Nova aditivna migracija `request_fingerprint` čuva provjeru identičnosti
+  ponovljenog zahtjeva. Replay vraća isti booking bez duplog debita ili outboxa;
+  promijenjeni zahtjev s istim ključem odbija se. Otkazani booking ne oživljava.
+- **55 funkcionalnih testova / 308 assertiona** i **9 višeprocesnih testova /
+  126 assertiona** prolaze na MySQL-u. Kontrolirani istodobni početak, odvojene
+  konekcije/procesi: zadnje mjesto/kredit, privatni intervali i bufferi,
+  grupni/privatni konflikt, duplikat, preklop polaznika i promjena kapaciteta.
+  Posebno provjeren neovisan commit drugog studija dok je prvi zaključan.
+- PHPStan i Pint prolaze; nova ruta registrirana, lokalna migracija izvršena,
+  `git diff --check` prolazi. README opisuje ugovor endpointa, lock/retry
+  protokol, migraciju i stvarne naredbe. Zatečene M2-05/M2-06 izmjene sačuvane.
+- Završna regresija bookinga, kredita, dostupnosti, rasporeda, kataloga,
+  administracije, podatkovnog temelja, javnih DTO-ova, auth/2FA granica i
+  migracija: **442 testa / 3.288 assertiona prolazi na MySQL-u**.
+
+Puna zbirka, frontend build i browser/živi SSR nisu pokretani u ovom inkrementu;
+ovo je backend promjena bez novih UI kontrola. Portal/oba dizajna ostaju M2-10,
+isporuka outboxa M2-12, otkaz/move M2-08/M2-09. Postojeći otvoreni M1 prihvati
+ostaju. Sljedeći konkretan razvojni korak: **M2-08 — otkaz i premještanje**.
+Za punu regresiju pokrenuti `php artisan test --compact`.
+
+## M2-08 — otkaz i premještanje (15. listopada 2026.)
+
+Status: **implementirano i provjereno za backend opseg M2-08**.
+
+- `ManageBooking` i tri zaštićene rute: pregled posljedica, otkaz i move.
+  Snapshot određuje otkazni rok; točna granica vraća kredit, sekundu poslije
+  ne vraća, a od početka nema standardne radnje ni za ownera.
+- Move zadržava izvorni grant i snapshot, traži istu vrstu/trajanje/trošak
+  te valjanost granta na novi datum. Stara rezervacija ostaje u povijesti,
+  nova dobiva novu poslovnu operaciju. Puni/nevaljani cilj vraća cijelu
+  transakciju, uključujući ledger, privatni termin, audit i outbox.
+- Tenant lock, ponovna autorizacija i fingerprint zahtjeva. Dupli otkaz ne
+  udvostručuje povrat; dupli move vraća isti novi booking. Otkaz privatnog
+  termina oslobađa interval i buffere. Nema povrata novca ili slanja emaila.
+- **42 nova funkcionalna testa** pokrivaju granice grupnog/privatnog roka,
+  početak, DST, snapshot, izvorni istek, rollback, retry, ovlasti i tenant
+  izolaciju. **Četiri nova višeprocesna scenarija** pokrivaju dupli otkaz,
+  isti/različiti paralelni move te konkurenciju za zadnje mjesto.
+- Završna regresija šest datoteka (otkaz/move, booking, konkurentnost, krediti,
+  dostupnost, raspored): **249 testova / 1.946 assertiona prolazi na MySQL-u**.
+  PHPStan, Pint, pregled ruta i diff provjera prolaze. Testni MySQL kontejner
+  pokrenut nakon početne nedostupnosti; razvojna baza nije mijenjana.
+- README i backlog ažurirani. Nema novih migracija ili ovisnosti; zatečene
+  korisnikove izmjene sačuvane.
+
+Odluka: ekvivalentan termin u M2 znači isti ID vrste i isto trajanje; transfer
+čuva izvorni snapshot, a dostupnost cilja provjerava postojeći booking servis.
+Prikaz posljedica isporučen je kao backend ugovor; portal/oba dizajna ostaju
+M2-10. Isporuka outboxa i zaštita od podsjetnika otkazanog bookinga (AC21)
+ostaju M2-12. Puna zbirka, frontend build, browser i živi SSR nisu izvršeni u
+ovom backend inkrementu. Postojeći otvoreni M1 prihvati ostaju.
+Sljedeći konkretan korak: **M2-09 — otkaz studija i owner iznimke**.
+Za punu regresiju pokrenuti `php artisan test --compact`.

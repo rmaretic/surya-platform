@@ -1,0 +1,11 @@
+[    2530ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://lotus.yoga.test:8000/_boost/browser-logs @ http://lotus.yoga.test:8000/login:110
+[ 5349216ms] [LOG] [vite] server connection lost. Polling for restart... @ http://lotus.yoga.test:8000/login:197
+[15159360ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://lotus.yoga.test:8000/_boost/browser-logs @ http://lotus.yoga.test:8000/login:110
+[17459732ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://lotus.yoga.test:8000/_boost/browser-logs @ http://lotus.yoga.test:8000/login:110
+[17587237ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://lotus.yoga.test:8000/_boost/browser-logs @ http://lotus.yoga.test:8000/account:110
+[18927265ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://lotus.yoga.test:8000/_boost/browser-logs @ http://lotus.yoga.test:8000/account:110
+[19036603ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://lotus.yoga.test:8000/_boost/browser-logs @ http://lotus.yoga.test:8000/account:110
+[19106677ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://lotus.yoga.test:8000/_boost/browser-logs @ http://lotus.yoga.test:8000/account:110
+[19179879ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://lotus.yoga.test:8000/_boost/browser-logs @ http://lotus.yoga.test:8000/account:110
+[19207763ms] [LOG] 🔍 Browser logger active (MCP server detected). Posting to: http://lotus.yoga.test:8000/_boost/browser-logs @ http://lotus.yoga.test:8000/account:110
+[19302349ms] [LOG] [vite] server connection lost. Polling for restart... @ http://lotus.yoga.test:8000/account:197

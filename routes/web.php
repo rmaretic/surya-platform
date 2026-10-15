@@ -1,13 +1,17 @@
 <?php
 
 use App\Http\Controllers\Auth\TwoFactorSettingsController;
+use App\Http\Controllers\BookingController;
 use App\Http\Controllers\OwnerInvitationController;
 use App\Http\Controllers\PlatformTenantController;
 use App\Http\Controllers\PublicStudioController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StaffInvitationController;
+use App\Http\Controllers\StudioAvailabilityController;
+use App\Http\Controllers\StudioCancellationController;
 use App\Http\Controllers\StudioCatalogController;
 use App\Http\Controllers\StudioController;
+use App\Http\Controllers\StudioCreditController;
 use App\Http\Controllers\StudioScheduleController;
 use App\Http\Middleware\EnsureTwoFactorEnrolled;
 use App\Http\Middleware\ProtectTwoFactorAuthentication;
@@ -38,6 +42,13 @@ foreach (['web' => '', 'platform' => 'platform'] as $guard => $prefix) {
 }
 Route::get('portal', [StudioController::class, 'account'])
     ->middleware(['auth:web', 'verified', 'can:customer-portal'])->name('portal');
+Route::post('bookings', [BookingController::class, 'store'])
+    ->middleware(['auth:web', 'verified', EnsureTwoFactorEnrolled::class])->name('bookings.store');
+Route::middleware(['auth:web', 'verified', EnsureTwoFactorEnrolled::class])->group(function (): void {
+    Route::get('bookings/{booking}/cancellation', [BookingController::class, 'cancellation'])->name('bookings.cancellation');
+    Route::post('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+    Route::post('bookings/{booking}/move', [BookingController::class, 'move'])->name('bookings.move');
+});
 
 require __DIR__.'/settings.php';
 
@@ -46,7 +57,18 @@ Route::prefix('studio')->name('studio.')
     ->group(function (): void {
         Route::get('profile', [StudioController::class, 'profile'])->name('profile.edit');
         Route::get('catalog', [StudioCatalogController::class, 'index'])->name('catalog.index');
+        Route::get('credits', [StudioCreditController::class, 'index'])->name('credits.index');
+        Route::post('credits', [StudioCreditController::class, 'store'])->name('credits.store');
+        Route::post('credits/{grant}/adjust', [StudioCreditController::class, 'adjust'])->name('credits.adjust');
+        Route::get('availability', [StudioAvailabilityController::class, 'index'])->name('availability.index');
+        Route::post('availability', [StudioAvailabilityController::class, 'store'])->name('availability.store');
+        Route::patch('availability/{availability}', [StudioAvailabilityController::class, 'update'])->name('availability.update');
+        Route::post('availability/{availability}/exceptions', [StudioAvailabilityController::class, 'exception'])->name('availability.exception');
+        Route::post('availability/{availability}/close', [StudioAvailabilityController::class, 'close'])->name('availability.close');
         Route::get('schedule', [StudioScheduleController::class, 'index'])->name('schedule.index');
+        Route::get('cancellations', [StudioCancellationController::class, 'index'])->name('cancellations.index');
+        Route::post('cancellations/sessions/{session}', [StudioCancellationController::class, 'cancel'])->name('cancellations.cancel');
+        Route::post('cancellations/bookings/{booking}/refund', [StudioCancellationController::class, 'refund'])->name('cancellations.refund');
         Route::post('schedule/sessions', [StudioScheduleController::class, 'store'])->name('schedule.store');
         Route::patch('schedule/sessions/{session}', [StudioScheduleController::class, 'update'])->name('schedule.update');
         Route::post('schedule/series', [StudioScheduleController::class, 'storeSeries'])->name('schedule.series.store');

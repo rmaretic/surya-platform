@@ -1,7 +1,7 @@
 # Surya
 
 Laravel + Vue + Inertia platforma za yoga studije. Trenutačni inkrement je
-[M2-01: pregled M1 i mapa nastavka](docs/pregled-m1-za-m2.md).
+[M2-07: atomski booking](#atomski-booking--m2-07).
 M1 još nije potpuno prihvaćen: otvorene provjere i dokazi za svih
 14 zadataka nalaze se u [pregledu prihvata](docs/razvojni-backlog-m1.md#pregled-prihvata--8-listopada-2026).
 
@@ -1328,3 +1328,314 @@ Nisu izvršeni puna zbirka, novi živi SSR test ni race testovi zasebnim
 procesima. Protokol lockova i rollback provjereni su na MySQL-u; konkurentni
 booking scenariji pripadaju M2-07/M2-14. Za punu regresiju pokreni
 `php artisan test --compact`. Sljedeći zadatak: **M2-05 — privatna dostupnost**.
+
+## Privatna dostupnost — M2-05
+
+Owner i manager koriste **Privatna dostupnost** u studio navigaciji
+(`/studio/availability`). Potrebni su aktivna privatna vrsta, instruktor,
+prostor i ownerova verzija pravila iz kataloga. Nema novih migracija ni paketa.
+
+- Tjedni prozor ima ISO dan 1–7, početni/završni datum, lokalne sate,
+  trajanje, korak početaka i buffer prije/poslije. Granice su uključivi
+  datumi; prozor ne prelazi ponoć. Za više dana dodaju se zasebni prozori.
+- Cijeli zaštićeni interval `[start-buffer_before, end+buffer_after)` mora
+  stati u prozor. Počeci su na mreži od početka prozora; npr. 09:00–13:00,
+  60 min, korak 30 min i buffer 15/15 daje početke 09:30–11:30.
+  Jednaki rubovi zaštićenih intervala dopušteni su.
+- Iznimka zamjenjuje jedan datum: cjelodnevna nedostupnost ili drugi prozor,
+  uz obvezan razlog. Može otvoriti drugi dan tjedna unutar razdoblja pravila.
+  Ponovno spremanje datuma uređuje isti zapis; povrat na tjedne sate radi se
+  unosom tih sati. Zatvaranje čuva pravilo, iznimke i povijest termina.
+- Najava i horizont dolaze iz verzioniranih ownerovih pravila. Spremanje
+  prozora uzima aktualnu verziju, a iznimka zadržava postojeću. Manager ne
+  može podmetnuti verziju, tenant ili zonu. Granice najave i horizonta
+  uključive su; horizont su kalendarski dani u zoni studija od sadašnjeg sata.
+- Pregled računa jedan datum i oduzima draft/published grupne i privatne
+  termine koji zauzimaju instruktora **ili** prostor, uključujući buffere
+  obaju intervala. Otkazani/dovršeni termini ne blokiraju nove prijedloge.
+  Neaktivni resursi ne daju slotove. Jednaki prijedlozi iz preklopljenih
+  pravila dedupliciraju se; dostupnost sama ne zauzima resurse.
+- Lokalni sat određuje početke, a trajanje su stvarne UTC minute. Ako prozor
+  ili mreža početaka zahvaća nepostojeće/dvostruko DST vrijeme, taj prozor
+  za datum ne daje slotove i prikazuje upozorenje. Admin unosi iznimku s
+  nedvosmislenim satima; nema tihog odabira UTC pomaka.
+- Sve mutacije prvo zaključavaju postojeći tenant red `FOR UPDATE`, zatim
+  ciljno pravilo i relevantne termine u ID redoslijedu; najviše tri pokušaja
+  transakcije. Audit sprema promjenu i operation key. Isti tenant, vrsta
+  radnje i UUID s istim zahtjevom ne ponavljaju upis; drugi sadržaj s istim
+  ključem odbija se. Revizija pravila uključuje iznimke i odbija zastarjelu
+  formu. UUID forme ostaje isti pri ponavljanju neuspjelog zahtjeva.
+- Izmjena/iznimka/zatvaranje odbija se ako bi uklonila prozor postojećeg
+  budućeg ili tekućeg privatnog termina s istom vrstom, instruktorom i
+  prostorom. Promjena njegovih resursa, trajanja, koraka ili buffera također
+  zahtijeva prethodno rješavanje termina. Dopušteno proširenje prozora ne
+  mijenja termin ni booking snapshot. Rollback uključuje audit i iznimke.
+
+Slot je **prijedlog**, bez gumba za potvrdu ili upisa bookinga. M2-07 mora
+ponoviti provjere pod istim tenant lockom te zajedno spremiti konkretni
+privatni termin, booking, debit i outbox, uz stabilni booking operation key.
+Race test dva nova privatna upisa ostaje M2-07/M2-14. Vanjski Google kalendar
+nije integriran. Javni prikaz na dva dizajna pripada M2-10.
+
+Provjere 11. listopada 2026.:
+
+```powershell
+php artisan test --compact tests/Feature/StudioAvailabilityTest.php
+php artisan test --compact tests/Feature/StudioAvailabilityTest.php tests/Feature/StudioScheduleTest.php tests/Feature/StudioCatalogTest.php tests/Feature/StudioAdministrationTest.php tests/Feature/BookingFoundationTest.php tests/Feature/PublicStudioTest.php
+composer types:check
+php vendor/bin/pint --dirty --format agent
+npm run types:check
+npx vp fmt resources/js/pages/studio/Availability.vue resources/js/layouts/StudioLayout.vue
+npx vp lint resources/js/pages/studio/Availability.vue resources/js/layouts/StudioLayout.vue
+npm run build
+git diff --check
+```
+
+Ciljano: **48 testova, 355 assertiona prolazi na MySQL-u**. Završna regresija
+dostupnosti, rasporeda, kataloga, administracije, podatkovnog temelja i javnih
+DTO-ova: **293 testa, 2.142 assertiona prolazi** (rezultat potvrđen 12. listopada).
+PHPStan, Pint,
+Vue typecheck, ciljani format/lint i client/SSR build prolaze. Desktop
+1440×1000 i mobitel 390×844: prazan pregled, obrazac, tipkovnički fokus,
+filtriranje datuma i bez horizontalnog prelijevanja. Popunjeni slotovi i
+uspješne mutacije pokriveni su HTTP testovima; nisu rađeni poslovni upisi
+u razvojnu bazu. Puni suite, živi SSR i booking race nisu izvršeni.
+Postojeća Fontaine/sourcemap upozorenja ostaju. Lokalni Compose servisi i
+PHP server ponovno su pokrenuti nakon utvrđene nedostupnosti baza/servera.
+
+## Grantovi i kreditni ledger — M2-06
+
+Owner koristi **Paketi i krediti** (`/studio/credits`). Aktivni polaznik i
+aktivan paket s aktivnim vrstama treninga preduvjeti su dodjele. Manager,
+instruktor i customer nemaju pristup ovom administrativnom pregledu ili
+mutacijama. Owner mora imati verificiran email i dovršen 2FA.
+
+- Izvori `demo`, `external_purchase` i `complimentary` ostaju odvojeni.
+  Vanjska kupnja zahtijeva referencu računa/evidencije, a besplatna dodjela
+  razlog. Autor i vrijeme dolaze sa servera. Nema payment zapisa, računa,
+  platformskog prihoda ni slanja emaila.
+- Grant čuva snapshot naziva, cijene EUR, broja kredita, valjanosti i zone;
+  zasebna pivot veza čuva dopuštene vrste. Izmjena/arhiviranje proizvoda
+  ne mijenja postojeće pravo. Valjanost teče od dodjele, u kalendarskim
+  danima zone studija. Početak treninga mora biti u `[valid_from, expires_at)`.
+- `ManageStudioCredits` prvo zaključava postojeći tenant red `FOR UPDATE`,
+  zatim povezane retke. Ponovno učitava owner ovlasti i koristi transakciju
+  s najviše tri pokušaja pri deadlocku. Dodjela, početni ledger i audit
+  spremaju se zajedno; korekcija dodaje novi zapis s obveznim razlogom.
+- Forma šalje stabilan UUID, sačuvan pri neuspjelom zahtjevu. Dodjela koristi
+  unique tenant/UUID na grantu; ledger ključevi imaju prefikse `grant:`,
+  `adjust:`, `debit:` i `reversal:`. Isti ključ i zahtjev vraćaju postojeći
+  rezultat, a promijenjeni sadržaj odbija se. Debit je dodatno dedupliciran
+  po bookingu, a reversal po izvornom debitu, i kad stigne novi UUID.
+- Saldo je zbroj ledgera, bez zasebne projekcije i bez brisanja pri isteku.
+  Raspoloživo je nepotrošeni saldo trenutno valjanog granta; isteklo je
+  nepotrošeni saldo nakon isteka. Rezervirano su već debitirani krediti
+  confirmed termina koji još nisu završili, pa se ne oduzimaju ponovno.
+  Korekcija ne smije proizvesti negativan saldo ni uzeti kredit potreban
+  potvrđenom bookingu koji još nema debit. Pozitivna korekcija ne mijenja
+  istek, pa korekcija isteklog paketa ne oživljava pravo.
+- `CreditLedger::debit()` i `reverse()` interne su radnje, bez HTTP endpointa.
+  Zahtijevaju vanjsku transakciju: pozivatelj prvo zaključava tenant, autorizira
+  booking/otkaz, provjerava rok/kapacitet i mijenja booking u istoj transakciji.
+  Ledger ponovno provjerava tenant i identitet, debit zahtijeva confirmed
+  booking, pokrivenu vrstu/datum i saldo; reversal zahtijeva cancelled booking
+  i izvorni debit. **Reversal sam ne odlučuje o pravu na povrat**: pravovremeni,
+  kasni i owner iznimni otkaz implementiraju se u M2-08/M2-09. Povrat čuva
+  izvorni istek. Attendance ne knjiži debit.
+- Pregled ima stranice od 20 grantova, izvore, autora, valjanost i povijest.
+  Salda se dohvaćaju skupno. Portal polaznika i odabir najranijeg valjanog
+  granta dolaze kroz M2-07/M2-10. Nema novih migracija ili ovisnosti.
+
+Provjere 12. listopada 2026.:
+
+```powershell
+php artisan test --compact tests/Feature/StudioCreditTest.php
+php artisan test --compact tests/Feature/StudioCreditTest.php tests/Feature/StudioAvailabilityTest.php tests/Feature/StudioScheduleTest.php tests/Feature/StudioCatalogTest.php tests/Feature/StudioAdministrationTest.php tests/Feature/BookingFoundationTest.php tests/Feature/PublicStudioTest.php
+composer types:check
+php vendor/bin/pint --dirty --format agent
+php artisan wayfinder:generate --with-form --no-interaction
+npm run types:check
+npx vp fmt resources/js/pages/studio/Credits.vue resources/js/layouts/StudioLayout.vue
+npx vp lint resources/js/pages/studio/Credits.vue resources/js/layouts/StudioLayout.vue
+npm run build
+git diff --check
+```
+
+Ciljano **46 testova / 307 assertiona prolazi na MySQL-u**. Završna regresija dostupnosti, rasporeda, kataloga, administracije, temelja i javnih DTO-ova: **339 testova / 2.449 assertiona prolazi**. Pokriveno: ovlasti i 2FA,
+tenant ID-jevi i isti email u drugom studiju, dokumentirani izvori, snapshot,
+retry, korekcije, oba DST prijelaza, rubovi valjanosti, rezervirani krediti,
+istekli povrat, append-only zaštita i rollback neuspjelog debita. PHPStan,
+Pint, Vue typecheck, ciljani format/lint i client/SSR build prolaze.
+Postojeća Fontaine/sourcemap upozorenja ostaju. Sandbox je blokirao Vite
+pomoćne procese; build i ciljani format/lint zatim su uspješno izvršeni uz
+odobrenje izvan sandboxa.
+
+Vizualno provjeren stvarni owner pregled nakon 2FA: desktop 1440×1000 i
+mobitel 390×844, prazno stanje i tipkovnički fokus. Popunjeni prikaz, dodjela,
+korekcija i kreditna povijest pregledani su u zasebnoj browser kartici s jasno
+označenim testnim propsima i blokiranim mutacijskim zahtjevima. Nema upisa u
+razvojnu bazu; uspješne mutacije provjerene su HTTP testovima. Nema
+horizontalnog prelijevanja niti JS grešaka u uspješnom fixture pregledu.
+Puna zbirka,
+zaseban živi SSR i višeprocesni race testovi nisu izvršeni; booking race
+scenariji ostaju M2-07/M2-14. Za punu regresiju pokreni
+`php artisan test --compact`.
+
+## Atomski booking — M2-07
+
+`CreateBooking::handle()` zajednička je radnja za polaznika i ručni upis
+ownera/managera. `POST /bookings` (`bookings.store`) koristi postojeću web
+sesiju, CSRF, verificirani email i obvezni owner 2FA. Customer rezervira samo
+za sebe; admin za aktivnog customera svog studija. Instruktor i platform
+admin nemaju pravo upisa. Server ponovno učitava ovlasti unutar transakcije.
+
+Ugovor zahtjeva:
+
+- Grupni termin: `class_session_id` i stabilni UUID `operation_key`.
+- Privatni slot: `availability_rule_id`, `starts_at` u ISO 8601 obliku sa
+  sekundama i offsetom (npr. `2026-10-19T12:00:00+02:00`) i `operation_key`.
+  Vrijeme se normalizira na UTC, a trajanje i bufferi dolaze iz dostupnosti.
+- Admin dodaje `user_id`; customer ga može izostaviti ili poslati vlastiti ID.
+  `tenant_id`, `credit_grant_id`, status, potrošnja i snapshot nisu klijentski
+  izbor. Server odabire pokrivajući grant s pozitivnim saldom po najranijem
+  isteku, zatim ID-u. Valjanost se provjerava na početku treninga.
+- Uspjeh vraća HTTP 200 i samo `booking: {id, class_session_id, status}`.
+  Nedostupni tuđi ID-jevi daju 404, nedopuštena radnja 403, a nevaljan zahtjev,
+  popunjeni termin, preklop ili manjak kredita 422 s porukom u `errors`.
+  Privatni slot je prijedlog: provjera dostupnosti ponavlja se pod lockom.
+
+Protokol zaključavanja za mali početni volumen:
+
+1. Otvoriti kratku DB transakciju i prvo zaključati postojeći red studija u
+   `tenants` pomoću `FOR UPDATE`. Sve radnje rasporeda, generiranja serija,
+   dostupnosti, kredita i bookinga moraju prvo uzeti isti lock svog studija.
+2. Booking zatim zaključava aktera/polaznika po ID-u, postojeću operaciju,
+   ciljni termin ili pravilo dostupnosti te grantove po isteku i ID-u.
+   Postojeće radnje zadržavaju vlastiti stabilni redoslijed ciljnih redaka
+   iza zajedničkog tenant locka. Ne zaključavati prvo booking ili grant pa
+   tek tenant. Različiti studiji ne dijele coordination red.
+3. Ponovno provjeriti aktivnost, objavu, najavu/horizont, kapacitet,
+   preklop polaznika, resurse s bufferima i kredit. Privatni konkretni termin,
+   booking, debit, snapshot pravila, audit i outbox potvrde spremaju se zajedno.
+   Svaki neuspjeh vraća cijelu transakciju. Jednaki rubovi intervala dopušteni su.
+4. Deadlock ima najviše tri pokušaja. Stabilni operation key i fingerprint
+   aktera, polaznika i cilja sprječavaju duplikat te odbijaju promijenjeni
+   zahtjev s istim ključem. Retry vraća postojeći rezultat i nakon isteka
+   prozora ili zatvaranja dostupnosti; otkazani booking ne reaktivira se.
+   Ovlasti i aktivnost identiteta provjeravaju se i pri retryju.
+
+Outbox je samo trajan zapis `booking.confirmed`, bez emaila, job dispatcha
+ili vanjskog API-ja unutar transakcije. Isporuka pripada M2-12. Nema checkouta,
+holdova, naplata ili novih UI kontrola. Portal i integracija u oba dizajna
+pripadaju M2-10; otkaz i premještanje slijede u M2-08/M2-09.
+
+Nova aditivna migracija dodaje nullable `bookings.request_fingerprint`, skriven
+iz serijalizacije. Postojeće rezervacije ostaju netaknute; njihovi stari
+ključevi bez fingerprinta odbijaju se pri pokušaju replaya. `down()` uklanja
+fingerprinte, pa je za popunjeni sustav poželjan forward ispravak.
+
+Provjere 14. listopada 2026.:
+
+```powershell
+php artisan migrate --no-interaction
+php artisan route:list --path=bookings --except-vendor
+php artisan test --compact tests/Feature/CreateBookingTest.php
+php artisan test --compact tests/Feature/BookingConcurrencyTest.php
+php artisan test --compact tests/Feature/CreateBookingTest.php tests/Feature/BookingConcurrencyTest.php tests/Feature/StudioCreditTest.php tests/Feature/StudioAvailabilityTest.php tests/Feature/StudioScheduleTest.php tests/Feature/StudioCatalogTest.php tests/Feature/StudioAdministrationTest.php tests/Feature/BookingFoundationTest.php tests/Feature/PublicStudioTest.php tests/Feature/TenantAuthenticationBoundaryTest.php tests/Feature/RoleAndTwoFactorTest.php tests/Feature/M2MigrationTest.php
+composer types:check
+php vendor/bin/pint --dirty --format agent
+git diff --check
+```
+
+Ciljano **55 testova / 308 assertiona** i **9 konkurentnih testova / 126
+assertiona** prolaze na MySQL-u. Race testovi koriste dva odvojena PHP procesa
+i MySQL connection ID-ja, TCP barijeru i tenant lock roditelja prije puštanja
+zahtjeva. Pokrivaju zadnje mjesto/kredit, privatne buffere instruktora/prostora,
+grupni/privatni konflikt, dupli upis, preklop polaznika i promjenu kapaciteta.
+Drugi studio potvrđuje booking dok prvi još čeka zaključani red.
+Testovi su ograničeni na `surya_testing` na portu 3308, commitaju vlastite
+fixture podatke radi vidljivosti podprocesima, a sljedeći test obnavlja testnu
+bazu standardnim `RefreshDatabase` postupkom. Ne pokretati ih paralelno s
+drugom zbirkom na istoj testnoj bazi. Razvojni poslovni podaci nisu mijenjani.
+
+Završna regresija navedenih 12 datoteka: **442 testa / 3.288 assertiona
+prolazi na MySQL-u**. PHPStan, Pint, pregled rute, lokalna migracija i
+`git diff --check` prolaze. Puna zbirka, frontend build i novi browser/živi SSR
+pregled nisu izvršeni u ovom backend inkrementu. Za punu regresiju pokreni
+`php artisan test --compact`. Sljedeći razvojni zadatak: **M2-08 — otkaz i
+premještanje**.
+
+## Otkaz i premještanje — M2-08
+
+`ManageBooking` koristi isti tenant coordination lock kao booking, raspored i
+ledger. Customer upravlja vlastitim rezervacijama; owner/manager može postupati
+za polaznika po istim pravilima. Instruktor nema tu ovlast. Provjera identiteta,
+verifikacije, aktivnosti i owner 2FA ponavlja se i pri ponovljenom zahtjevu.
+
+HTTP ugovor (postojeća web sesija i CSRF):
+
+- `GET /bookings/{booking}/cancellation`: dopuštenost otkaza/premještanja,
+  posljedica za kredit, UTC rok, zona snapshota i objašnjenje posljedice.
+  Pregled je informativan; POST ponovno računa rok pod lockom.
+- `POST /bookings/{booking}/cancel`: obvezni UUID `operation_key`.
+- `POST /bookings/{booking}/move`: novi UUID `operation_key` i grupni
+  `class_session_id` ili privatni `availability_rule_id` + `starts_at`,
+  u istom ISO 8601 obliku kao pri rezervaciji. Server prenosi vlasnika i grant.
+- Mutacije vraćaju `booking: {id, class_session_id, status}`; move vraća novu
+  rezervaciju. Tuđi tenant ID-jevi daju 404, nedopuštena ovlast 403, a nevaljan
+  zahtjev, rok, cilj ili pravo 422. Klijentski status, grant, tenant, snapshot,
+  korisnik i razlog povrata nisu dopušten izbor.
+
+Rok je početak minus snapshot minute, kao proteklo UTC vrijeme i preko DST-a.
+Točno na roku otkaz je pravovremen; sekundu poslije kredit ostaje potrošen,
+ali se mjesto oslobađa. Točno na početku i poslije nema standardnog otkaza ni
+premještanja, uključujući admina. Owner iznimka zasebna je radnja M2-09.
+Pravovremeni otkaz reversira izvorni debit i čuva izvorni istek granta;
+istekli kredit ne postaje raspoloživ. Nema povrata novca.
+
+Move zahtijeva isti ID vrste, isto trajanje, trošak jednog kredita i isti grant
+valjan na novi datum. Zadržava izvornu verziju i snapshot pravila; promjena
+kataloga ili ciljnog termina ne mijenja stečena pravila. Najava/horizont cilja,
+kapacitet, resursi i preklopi ponovno se provjeravaju kroz `CreateBooking`.
+Povrat starog debita, nova rezervacija i debit, audit i outbox jedna su
+transakcija. Puni/nevaljani cilj poništava sve upise. Stari booking ostaje u
+povijesti s razlogom `moved`; audit i outbox povezuju ga s novim ID-jem.
+
+Otkaz privatnog bookinga bez preostalih confirmed rezervacija otkazuje njegov
+konkretni termin i oslobađa interval s bufferima. Dostupnost ostaje sačuvana;
+novi privatni booking stvara novi konkretni termin. Grupni termin ostaje objavljen.
+Ponovljeni otkaz ne vraća drugi kredit ni uz novi UUID. Move s istim ključem i
+zahtjevom vraća isti novi booking i nakon proteka roka; promijenjeni zahtjev
+s istim ključem odbija se. Novi move već premještene rezervacije nije dopušten.
+
+Outbox dodaje `booking.cancelled` ili `booking.moved`; nova rezervacija ima
+`booking.confirmed`. Nema slanja emaila. Budući potrošač podsjetnika (M2-12)
+mora ponovno provjeriti confirmed status prije isporuke (AC21). Portal koji
+prikazuje ove posljedice i gumbe na oba dizajna pripada M2-10; ovdje je isporučen
+backend ugovor. Nema novih ovisnosti ili migracija.
+
+Provjere 15. listopada 2026.:
+
+```powershell
+docker compose up -d mysql-testing
+php artisan test --compact tests/Feature/ManageBookingTest.php tests/Feature/BookingConcurrencyTest.php
+php artisan test --compact tests/Feature/ManageBookingTest.php tests/Feature/CreateBookingTest.php tests/Feature/BookingConcurrencyTest.php tests/Feature/StudioCreditTest.php tests/Feature/StudioAvailabilityTest.php tests/Feature/StudioScheduleTest.php
+composer types:check
+php vendor/bin/pint --dirty --format agent
+php artisan route:list --path=bookings --except-vendor
+git diff --check
+```
+
+Završna regresija navedenih šest datoteka: **249 testova / 1.946 assertiona
+prolazi na MySQL-u**, uključujući 42 funkcionalna testa M2-08 i ukupno 13
+višeprocesnih testova (četiri nova: dupli otkaz, isti/različiti paralelni move
+te konkurencija za zadnje mjesto). Početni ciljani prolaz prije četiri dodatne
+provjere ovlasti: **51 test / 522 assertiona**. PHPStan, Pint, pregled četiri
+booking rute i `git diff --check` prolaze. Prvi pokušaj testova nije imao
+pokrenutu testnu bazu; nakon pokretanja postojećeg kontejnera provjere su
+ponovljene. Razvojna baza nije mijenjana.
+
+Puna zbirka, frontend build, browser i živi SSR nisu pokretani: inkrement
+mijenja backend i nema novog korisničkog sučelja. Za punu regresiju pokreni
+`php artisan test --compact`. Sljedeći razvojni zadatak: **M2-09 — otkaz
+studija i iznimke**.

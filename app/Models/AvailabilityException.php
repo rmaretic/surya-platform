@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\BelongsToTenant;
+use Carbon\CarbonImmutable;
 use Database\Factories\AvailabilityExceptionFactory;
 use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property int $tenant_id
  * @property int $availability_rule_id
+ * @property CarbonImmutable $local_date
  */
 #[UseEloquentBuilder(TenantBuilder::class)]
 class AvailabilityException extends Model

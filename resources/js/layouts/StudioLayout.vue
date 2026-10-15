@@ -5,12 +5,16 @@ import { edit } from '@/routes/studio/profile';
 import { index } from '@/routes/studio/staff';
 import { index as catalog } from '@/routes/studio/catalog';
 import { index as schedule } from '@/routes/studio/schedule';
+import { index as availability } from '@/routes/studio/availability';
+import { index as credits } from '@/routes/studio/credits';
+import { index as cancellations } from '@/routes/studio/cancellations';
 const page = usePage<{
     studioName: string;
     studioAccess: {
         administration: boolean;
         manage: boolean;
         catalog: boolean;
+        credits: boolean;
     };
 }>();
 </script>
@@ -60,9 +64,27 @@ const page = usePage<{
                     >
                     <Link
                         v-if="page.props.studioAccess.catalog"
+                        :href="cancellations()"
+                        class="hover:underline"
+                        >Otkazi i iznimke</Link
+                    >
+                    <Link
+                        v-if="page.props.studioAccess.catalog"
                         :href="schedule()"
                         class="hover:underline"
                         >Raspored</Link
+                    >
+                    <Link
+                        class="hover:underline"
+                        v-if="page.props.studioAccess.catalog"
+                        :href="availability()"
+                        >Privatna dostupnost</Link
+                    >
+                    <Link
+                        v-if="page.props.studioAccess.credits"
+                        :href="credits()"
+                        class="hover:underline"
+                        >Paketi i krediti</Link
                     >
                     <Link :href="account()" class="hover:underline"
                         >Moj račun</Link

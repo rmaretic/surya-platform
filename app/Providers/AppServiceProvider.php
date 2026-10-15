@@ -38,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('customer-portal', [AdministrativeAccess::class, 'portal']);
         Gate::define('studio-catalog', [StudioCatalogPolicy::class, 'manage']);
         Gate::define('studio-pricing', [StudioCatalogPolicy::class, 'pricing']);
+        Gate::define('studio-credits', [StudioCatalogPolicy::class, 'pricing']);
     }
 
     /**
