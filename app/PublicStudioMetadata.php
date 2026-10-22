@@ -32,10 +32,15 @@ class PublicStudioMetadata
             && $hostname !== 'localhost';
 
         return [
-            'title' => $page === 'about' ? 'O studiju — '.$profile->name : $profile->name,
+            'title' => match ($page) {
+                'about' => 'O studiju — '.$profile->name,
+                'schedule' => 'Raspored — '.$profile->name,
+                'portal' => 'Moj studio — '.$profile->name,
+                default => $profile->name,
+            },
             'description' => $profile->shortDescription ?: 'Upoznajte '.$profile->name.'. Informacije o studiju i kontakt.',
             'canonical' => $canonical,
-            'robots' => $indexable ? 'index, follow' : 'noindex, nofollow',
+            'robots' => $indexable && ! in_array($page, ['schedule', 'portal'], true) ? 'index, follow' : 'noindex, nofollow',
         ];
     }
 }

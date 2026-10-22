@@ -2,7 +2,7 @@
 
 Datum: 7. listopada 2026.  
 Izvor: specifikacija-platforme-v1.md (v1.6) i razvojni-backlog-m1.md.  
-Status (15. listopada 2026.): M2-01 pregledan i dokumentiran; M2-02–M2-05 implementirani i provjereni na MySQL-u. M2-06 implementiran i provjeren, uključujući vizualni prihvat. M2-07–M2-09 implementirani i provjereni, uključujući višeprocesne MySQL testove i administrativni prikaz M2-09. Potpuni M1 prihvat ostaje otvoren prema njegovoj matrici. M2-10–M2-15 još nisu implementirani.
+Status (21. listopada 2026.): M2-01 pregledan i dokumentiran; M2-02–M2-05 implementirani i provjereni na MySQL-u. M2-06 implementiran i provjeren, uključujući vizualni prihvat. M2-07–M2-09 implementirani i provjereni, uključujući višeprocesne MySQL testove i administrativni prikaz M2-09. M2-10 implementiran i provjeren na oba dizajna. Potpuni M1 prihvat ostaje otvoren prema njegovoj matrici. M2-11 i M2-12 implementirani i provjereni. M2-13 dovršen i provjeren 22. listopada 2026.; M2-14–M2-15 još nisu implementirani.
 
 ## Cilj i granica faze
 
@@ -162,6 +162,8 @@ Samo owner vraća kredit mimo pravila uz razlog. Kompenzacijski grant povezan s 
 
 **Ovisnosti:** M2-07–M2-09. **Veza:** 6, 7, 11.
 
+**Status (20. listopada 2026.): dovršeno za opseg M2-10.** [Zajednički tenant raspored i portal](../app/Http/Controllers/CustomerPortalController.php), [javni DTO rasporeda](../app/Actions/ReadCustomerSchedule.php), zajedničke Vue komponente unutar Lotus/Balance layouta. Filtri, privatni slotovi, kreditna prava, namjera kroz prijavu, booking/otkaz/move, vlastiti paketi i kreditna povijest. **13 novih testova / 275 assertiona**; završna MySQL regresija **170 testova / 1.769 assertiona**, zasebno **17 SSR testova / 263 assertiona**. PHPStan, Vue typecheck, Pint, ciljani lint/format i client/SSR build prolaze. Stvarne prijave i prazni portali te popunjena mobilna/desktop stanja s označenim testnim propsima i presretnutim mutacijama pregledani; uspješne poslovne mutacije potvrđene HTTP testovima. Ispravljena obrada 422 bez lažnog uspjeha; retry čuva operation key. [Ugovor i provjere](../README.md#raspored-i-portal-polaznika--m2-10). Nema migracija ili ovisnosti. Puna zbirka nije pokrenuta; M2-11 slijedi.
+
 Javni raspored s filtrima vrste/instruktora/datuma, privatni slotovi, trajanje, kapacitet, kredit i pravila. Zona studija jasno prikazana. Portal s rezervacijama, detaljem, otkazom/moveom, paketima i korisničkom kreditnom poviješću bez privatnih bilješki.
 
 Zajednički backend, sačuvani različiti Lotus/Balance layouti. Nakon logina odabir termina samo je namjera, ponovno provjeriti kapacitet. Uspjeh tek nakon server potvrde. Prazno/loading/error/puni termin imaju jasna stanja.
@@ -170,6 +172,8 @@ Zajednički backend, sačuvani različiti Lotus/Balance layouti. Nakon logina od
 
 ## M2-11 — ručni dolasci
 
+**Status (20. listopada 2026.): dovršeno za opseg M2-11.** Dnevni pregled, instruktorov minimalni popis, ručni dolasci/nedolasci i ispravci s razlogom/auditom. Tenant lock, idempotencija i zaštita od zastarjelog statusa, bez novog debita. 20 novih testova / 256 assertiona; regresija 81 / 1.080 na MySQL-u. Pint, PHPStan, Vue tipovi, lint/format, client/SSR build te desktop/mobilni pregled prolaze. [Ugovor i granice provjera](../README.md#ručni-dolasci--m2-11). Nema novih migracija ili ovisnosti.
+
 **Ovisnost:** M2-10. **Veza:** 14.1, AC15.
 
 Instruktor vidi svoje termine i minimalni popis; owner/manager studio. Prisutan bilježi autora/vrijeme. Nakon kraja eksplicitno potvrditi no_show; nezavršena evidencija ostaje pending. Ispravak zahtijeva razlog/audit. Bez QR-a.
@@ -177,6 +181,8 @@ Instruktor vidi svoje termine i minimalni popis; owner/manager studio. Prisutan 
 **Prihvat:** ponovni klik ne kreira duplikat ni debit. Tuđi tenant/instruktor odbijen. Otkazani booking nema check-in. Zaboravljena evidencija ne uzrokuje automatski no-show.
 
 ## M2-12 — obavijesti i podsjetnici
+
+**Status (21. listopada 2026.): dovršeno za lokalni opseg M2-12.** [Dispatcher](../app/Console/Commands/DispatchBookingNotifications.php), [worker](../app/Jobs/DeliverBookingNotification.php), tenant predlošci i 24-satni podsjetnici s ponovnom provjerom statusa/verzije. Oporavak pending događaja, neizvjesni pokušaji bez automatskog ponavljanja, ograničeno ručno razrješenje. [31 novi test](../tests/Feature/BookingNotificationTest.php); završna regresija **225 testova / 1.622 assertiona na MySQL-u**, uključujući stvarni Mailpit za dva studija. PHPStan, Pint i diff provjera prolaze. [Ugovor, naredbe i granice](../README.md#obavijesti-i-podsjetnici--m2-12). Nema novih migracija/ovisnosti ni produkcijskog slanja. Puna zbirka i novi višeprocesni worker test nisu izvršeni.
 
 **Ovisnosti:** M2-09, M2-11. **Veza:** 18, AC21.
 
@@ -189,6 +195,8 @@ Dedup: tenant + događaj + booking/verzija + primatelj + vrsta. Dispatcher opora
 ## M2-13 — operativni dashboardi
 
 **Ovisnosti:** M2-11–M2-12. **Veza:** 8–10.
+
+**Status (22. listopada 2026.): dovršeno za opseg M2-13.** [Zajednički izvještaj](../app/Actions/ReadOperationalDashboard.php), studijski/instruktorski pregled i odvojeni platformski agregati. Datumski filtar, lokalne UTC granice, ponderirana popunjenost, dolasci i zasebni kasni otkazi; povijesni kapacitet sa samog termina. Platforma zahtijeva `platform.analytics.read` i ne dobiva osobne popise. **16 novih testnih scenarija; regresija četiri datoteke: 86 testova / 1.076 assertiona prolazi na MySQL-u.** PHPStan, Pint, Vue typecheck, ciljani lint/format, client/SSR build i pregled ruta prolaze. Stvarni manager pregled i filtar te popunjeni desktop/mobilni prikazi s označenim testnim propsima vizualno provjereni. [Definicije i granice](../README.md#operativni-dashboardi--m2-13). Puna zbirka i zasebna živa SSR regresija nisu izvršene; nema migracija ni novih ovisnosti.
 
 Današnji/budući termini, confirmed/slobodna mjesta, pending/present/no_show. Popunjenost: zbroj confirmed mjesta / zbroj kapaciteta odabranih neotkazanih objavljenih termina. Razdoblje i obuhvat eksplicitni; kasni otkazi zasebno. Povijesni prikaz čuva kontekst kapaciteta/statusa.
 

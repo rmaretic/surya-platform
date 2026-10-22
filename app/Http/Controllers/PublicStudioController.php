@@ -30,7 +30,8 @@ class PublicStudioController extends Controller
         return $this->renderPage('about');
     }
 
-    private function renderPage(string $page): Response
+    /** @param array<string, mixed> $props */
+    public function renderPage(string $page, array $props = []): Response
     {
         $tenant = $this->context->requireTenant();
         try {
@@ -51,6 +52,7 @@ class PublicStudioController extends Controller
         return Inertia::render($component, [
             'profile' => $publicProfile->toArray(),
             'seo' => app(PublicStudioMetadata::class)->forPage($publicProfile, $page),
+            ...$props,
         ]);
     }
 }

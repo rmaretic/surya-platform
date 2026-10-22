@@ -9,11 +9,11 @@ class DesignRegistry
     private const array DESIGNS = [
         'lotus' => [
             'label' => 'Lotus',
-            'pages' => ['home' => 'sites/lotus/Home', 'about' => 'sites/lotus/About'],
+            'pages' => ['home' => 'sites/lotus/Home', 'about' => 'sites/lotus/About', 'schedule' => 'sites/lotus/Schedule', 'portal' => 'sites/lotus/Portal'],
         ],
         'balance' => [
             'label' => 'Balance',
-            'pages' => ['home' => 'sites/balance/Home', 'about' => 'sites/balance/About'],
+            'pages' => ['home' => 'sites/balance/Home', 'about' => 'sites/balance/About', 'schedule' => 'sites/balance/Schedule', 'portal' => 'sites/balance/Portal'],
         ],
     ];
 

@@ -1722,3 +1722,274 @@ prolazi na MySQL-u**, uključujući ukupno 16 višeprocesnih scenarija. Puna
 zbirka i zasebna SSR regresija nisu izvršene. Za punu regresiju pokreni
 `php artisan test --compact`. Sljedeći zadatak: **M2-10 — raspored i portal
 na oba dizajna**.
+
+## Raspored i portal polaznika — M2-10
+
+`/schedule` prikazuje javni raspored za datum u zoni studija. Filtri `date`,
+`type` i `instructor` koriste zajednički tenant backend. Objavljeni grupni
+termini prikazuju slobodna mjesta, privatni slotovi koriste postojeći izračun
+raspoloživosti. Javni odgovor nema korisnički identitet ni popise rezervacija.
+
+`/reserve` zahtijeva verificiranog polaznika. Namjera odabira (`intent`)
+preživljava prijavu preko postojeće intended navigacije, ali ne čuva mjesto.
+Kredit se prikazuje prema početku i vrsti treninga; autoritativni POST ponovno
+provjerava sve uvjete. Nedostatak kredita upućuje na kontakt studija.
+Premještanje koristi `move` ID vlastite rezervacije i postojeća snapshot pravila.
+
+`/portal` prikazuje samo vlastite rezervacije, njihov detalj (`booking`),
+buduće/povijesno razdoblje (`period=upcoming|history`), pakete i kreditne promjene.
+Paginacija: `bookings_page`, `grants_page`, `entries_page`. Javni DTO-ovi ne
+izlažu interne bilješke, autore, source reference ni operation ključeve ledgera.
+Saldo prikazuje raspoloživo, rezervirano, isteklo i buduće pravo. Nema naplate
+ni financijskih dokumenata. Oba dizajna koriste isti backend i zajedničke
+komponente unutar svojih postojećih layouta.
+
+JSON mutacije ostaju M2-07/M2-08 endpointi. UI onemogućuje ponovni klik tijekom
+obrade i zadržava isti operation key pri retryju. Inertia v3 `useHttp` za 422
+poziva `onError` i razriješi Promise bez rezultata: uspjeh se zato postavlja
+isključivo u `onSuccess`. Mrežni neizvjestan ishod ne prikazuje potvrdu.
+
+Izvršene provjere:
+
+```powershell
+php artisan test --compact tests/Feature/CustomerPortalTest.php
+php artisan test --compact tests/Feature/CustomerPortalTest.php tests/Feature/CreateBookingTest.php tests/Feature/ManageBookingTest.php tests/Feature/PublicStudioTest.php tests/Feature/StudioAdministrationTest.php tests/Feature/RoleAndTwoFactorTest.php
+php vendor/bin/pint --dirty --format agent
+composer types:check
+npm run types:check
+npm run build
+node bootstrap/ssr/app.js
+```
+
+Uz aktivni Node proces u drugom terminalu:
+
+```powershell
+$env:SSR_TEST_URL = 'http://127.0.0.1:13714'
+php artisan test --compact tests/Feature/PublicStudioSsrTest.php
+Remove-Item Env:SSR_TEST_URL
+php artisan inertia:check-ssr --no-interaction
+```
+
+Rezultati: 13 novih testova / 275 assertiona; regresija 170 / 1.769;
+SSR 17 / 263. PHPStan, Vue tipovi, Pint, ciljani `vp lint`/`vp fmt` i oba
+builda prolaze. Browser: stvarna prijava i prazni portali; popunjena stanja i
+422 uz označene testne propse/presretnute mutacije, mobitel 390 px i tipkovnica.
+Uspješni poslovni upisi provjereni HTTP testovima na testnoj bazi. Browser
+presretanja uklonjena. Puna zbirka nije pokrenuta. Obavijesti slijede u M2-12.
+
+## Ručni dolasci — M2-11
+
+U studio navigaciji **Dolasci** owner/manager vidi dnevne termine studija,
+a instruktor samo termine svojeg aktivnog profila. Popis prikazuje ime,
+status rezervacije i evidenciju s autorom/vremenom, bez emaila, kreditnog
+prava ili privatnih bilješki polaznika.
+
+- `GET /studio/attendance?date=YYYY-MM-DD&session=ID`: dnevni pregled u zoni studija.
+- `POST /studio/attendance/{booking}`: `operation_key` (UUID), `status`
+  (`present`, `no_show`, `pending`), `expected_status` i opcionalni `reason`.
+- `present` je ručni upis osoblja bez QR vremenskog prozora. `no_show` je
+  dopušten tek na kraju termina ili poslije, uz izričitu potvrdu. Propuštena
+  evidencija ostaje `pending`; nema automatske promjene ni novog debita.
+- Promjena već evidentiranog dolaska/nedolaska zahtijeva razlog. Povrat na
+  `pending` briše aktualnog autora/vrijeme prema postojećem DB constraintu;
+  audit čuva autora, vrijeme, prethodno/novo stanje i razlog ispravka.
+- Otkazane rezervacije te draft/cancelled termini ne dopuštaju nove upise.
+  Objavljeni i dovršeni termini podržavaju evidenciju. Instruktor ne može
+  dohvatiti tuđi termin niti upisati dolazak za njega.
+- Tenant coordination lock, ponovna autorizacija, upis i audit dio su iste
+  transakcije. Jedinstveni zapis po bookingu sprječava duplikate. Isti UUID
+  i zahtjev ne ponavlja operaciju ni nakon kasnijeg ispravka; promijenjeni
+  zahtjev s istim UUID-om odbija se. Novi UUID koji potvrđuje isto stanje
+  čuva postojeće vrijeme/autora i auditira operaciju bez promjene stanja.
+  Različit `expected_status` odbija zastarjelu promjenu.
+
+Nema migracija, novih ovisnosti, QR-a, slanja emailova ni promjene kredita.
+
+Provjere 20. listopada 2026.:
+
+```powershell
+php artisan test --compact tests/Feature/StudioAttendanceTest.php
+php artisan test --compact tests/Feature/StudioAttendanceTest.php tests/Feature/StudioCancellationTest.php tests/Feature/CustomerPortalTest.php tests/Feature/StudioAdministrationTest.php
+php vendor/bin/pint --dirty --format agent
+composer types:check
+npm run types:check
+npm exec -- vp fmt resources/js/pages/studio/Attendance.vue resources/js/layouts/StudioLayout.vue
+npm exec -- vp lint resources/js/pages/studio/Attendance.vue resources/js/layouts/StudioLayout.vue
+npm run build
+php artisan route:list --path=studio/attendance --except-vendor
+git diff --check
+```
+
+Ciljano **20 testova / 256 assertiona** prolazi na MySQL-u. Regresija četiri
+navedene datoteke: **81 test / 1.080 assertiona**; nakon završne izmjene
+potpisa audit helpera ponovljen je ciljani skup. Pint, PHPStan, Vue tipovi,
+ciljani lint/format i client/SSR build prolaze. Build ima postojeća upozorenja
+za opcionalni fontaine i Inertia sourcemap. Vite/Chrome zahtijevali su
+pokretanje izvan sandboxa zbog blokiranih podprocesa.
+
+Stvarna manager prijava i prazan prikaz pregledani su lokalno. Popunjeni
+prikaz, potvrda nedolaska, obrazac ispravka, tipkovnica i mobilna širina
+390 px pregledani su s označenim testnim Inertia propsima i presretnutim
+mutacijama; nema horizontalnog preljeva ni kontrola na otkazanom bookingu.
+Poslovni upisi provjereni su HTTP testovima na testnoj bazi. Razvojne
+rezervacije nisu stvarane. Puna zbirka, zasebna živa SSR regresija i novi
+višeprocesni attendance test nisu pokretani. Za punu regresiju pokreni
+`php artisan test --compact`. Sljedeći zadatak je **M2-12 — obavijesti i podsjetnici**.
+
+## Obavijesti i podsjetnici — M2-12
+
+`bookings:dispatch-notifications` čita postojeći transakcijski outbox i
+generira podsjetnike. Scheduler ga pokreće svake minute u `local`/`testing`
+okruženju. Job prenosi samo tenant/outbox ID, uspostavlja tenant kontekst
+i čisti ga i nakon iznimke. Nema novih migracija ni ovisnosti.
+
+```powershell
+docker compose up -d --wait
+php artisan bookings:dispatch-notifications --no-interaction
+php artisan queue:work --tries=1 --timeout=30 --no-interaction
+php artisan schedule:work --no-interaction
+```
+
+Worker i scheduler pokreću se u odvojenim terminalima. Za postojeću database
+queue vezu `retry_after` je 90 sekundi, dulje od timeouta workera.
+Dispatcher se može ograničiti s `--tenant=ID`. Ne pokretati ga nad razvojnim
+podacima ako ne želite lokalne poruke za sve čekajuće događaje.
+
+Potvrda, korisnički i studijski otkaz, premještanje, promjena
+instruktora/prostora i povrat iznimkom koriste hrvatski HTML/tekst predložak.
+Premještanje šalje obavijest o izvornom terminu i zasebnu potvrdu novoga.
+Naziv pošiljatelja je studio; adresa ostaje platformski `MAIL_FROM_ADDRESS`.
+Verificirani web hostname nije dokaz verifikacije email domene.
+Portal URL dolazi samo iz aktivne, verificirane primarne domene studija.
+Privatni razlozi i bilješke nisu u poruci.
+
+Slanje je ograničeno na lokalni loopback SMTP (M1 Mailpit), `array` ili `log`;
+vanjski transporti i produkcija nisu uključeni. Testovi šalju isključivo na
+umjetne `example.test` adrese. SES/DNS onboarding i provider webhookovi ostaju
+izvan M2.
+
+Podsjetnik dospijeva 24 sata prije početka (stvarnih UTC sati, uz prikaz u
+zoni iz booking snapshota). Radna odluka: najviše 15 minuta zakašnjenja zbog
+schedulera; stariji podsjetnik se preskače. Booking potvrđen na ili nakon
+trenutka podsjetnika ne dobiva redundantnu poruku. Worker ponovno čita
+status i vrijeme; reminder/promjena resursa zahtijevaju istu verziju termina.
+Potvrda koristi aktualne podatke aktivne rezervacije. Već poslani ili
+neizvjesni reminder ne generira se ponovno nakon promjene verzije.
+
+Tenant unique outbox ključ čuva postojeće poslovne događaje. Booking ima
+jednog nepromjenjivog primatelja; reminder ključ dodatno sadrži booking,
+verziju, primatelja i kanal. Kratki tenant/outbox lock prisvaja pokušaj,
+a SMTP poziv je izvan transakcije. Ponovno stavljeni queue posao ne ponavlja
+već prisvojenu ili dovršenu isporuku. Rollback uklanja događaj; nakon pada
+između commita i dispatcha sljedeći prolaz ponovno pronalazi `pending`.
+
+Stanja i oporavak:
+
+- `pending`: čeka dispatcher/worker; pad prije prisvajanja sigurno se ponavlja.
+- `processing`: zapisan pokušaj; nakon pet minuta dispatcher ga označava
+  `uncertain`, bez automatskog novog slanja.
+- `delivered`: lokalni transport prihvatio poruku; nije dokaz čitanja niti
+  produkcijskog dostavljanja.
+- `failed` + `suppressed_ineligible`: zastarjela ili nedopuštena poruka
+  (npr. otkaz, promjena verzije, neaktivni primatelj, neverificirana domena).
+- `uncertain`: SMTP/DB potvrda mogla je izostati nakon slanja. Provjeriti
+  Mailpit i zaglavlje `X-Surya-Outbox: TENANT_ID:OUTBOX_ID`. Ako je poruka
+  prisutna, potvrditi isporuku; retry odabrati samo kad je potvrđeno da
+  nije prihvaćena. Ako ishod nije razjašnjen, ostaviti `uncertain`.
+
+```powershell
+php artisan bookings:dispatch-notifications --tenant=1 --resolve=123 --outcome=delivered --no-interaction
+php artisan bookings:dispatch-notifications --tenant=1 --resolve=123 --outcome=retry --no-interaction
+```
+
+ID-jevi su primjeri; naredba mijenja samo `uncertain` zapis navedenog studija.
+Najviše tri pokušaja po zapisu; konačna potvrda primitka moguća je i nakon
+trećeg pokušaja. Log bilježi ID-jeve, broj pokušaja, ishod i ručno razrješenje,
+bez email adresa, sadržaja, tokena ili teksta transportne iznimke.
+Ne jamči se exactly-once SMTP isporuka. Otkaz potvrđen prije posljednje
+provjere sprječava reminder; već predanu poruku nije moguće opozvati.
+
+Provjere:
+
+```powershell
+php artisan test --compact tests/Feature/BookingNotificationTest.php
+php artisan test --compact tests/Feature/BookingNotificationTest.php tests/Feature/CreateBookingTest.php tests/Feature/ManageBookingTest.php tests/Feature/StudioCancellationTest.php tests/Feature/StudioScheduleTest.php tests/Feature/TenantIsolationTest.php
+php vendor/bin/phpstan analyse --memory-limit=512M --no-progress
+php vendor/bin/pint --dirty --format agent
+```
+
+Završna M2-12 regresija: **225 testova / 1.622 assertiona prolazi** na
+MySQL-u, uključujući 31 novi test i stvarnu lokalnu Mailpit isporuku za dva
+studija. PHPStan, Pint i diff provjera prolaze. Puna zbirka, novi višeprocesni
+worker test i browser pregled emaila nisu izvršeni; inbox je provjeren API-jem.
+Frontend/SSR build nije pokretan u ovom backend inkrementu.
+
+## Operativni dashboardi — M2-13
+
+Studio koristi `/dashboard`, platforma `/platform/dashboard`. Registar studija
+ostaje na `/platform/tenants`; platformska navigacija ima zaseban Pregled.
+Owner i manager vide svoj studio, instruktor samo termine svojeg nearhiviranog
+profila. Customer nema pristup. Platforma zahtijeva `platform.analytics.read`,
+aktivni verificirani platformski identitet, 2FA i platformski host; vraća samo
+agregate, bez polaznika, rezervacijskih zapisa ili impersonationa.
+
+GET filtri `from` i `to` imaju format `YYYY-MM-DD`, uključuju oba datuma i
+prihvaćaju najviše 366 dana. Zadano: danas i idućih šest dana. Studio koristi
+svoju zonu, platforma zajedničku `Europe/Zagreb` za usporediv UTC interval svih
+studija, uključujući neaktivne. Filtrira se početak termina u poluotvorenom
+UTC intervalu `[lokalni početak prvog dana, lokalni početak dana nakon zadnjeg)`.
+Time je obuhvaćen i cijeli dan promjene ljetnog/zimskog vremena.
+
+Definicije:
+
+- Objavljeni i završeni grupni/privatni termini ulaze u operativni obuhvat;
+  `completed` čuva prethodno objavljeni termin u povijesnom pregledu. Nacrti ne ulaze.
+- Popunjenost = zbroj `confirmed` mjesta / zbroj kapaciteta tih termina × 100,
+  zaokruženo na jednu decimalu. Ukupno je omjer ukupnih zbrojeva, ne prosjek stopa.
+- Kapacitet dolazi iz `class_sessions.capacity`, ne iz trenutačnog kataloga.
+  Postojeći servis rasporeda odbija izmjenu prošlih, završenih i otkazanih termina.
+  Povijesni redak pokazuje sačuvani kapacitet i trenutačni status termina;
+  ovo nije izvještaj stanja rezervacija na proizvoljan povijesni trenutak.
+- `pending`, `present`, `no_show` broje samo potvrđene rezervacije.
+  Nedostatak evidencije znači `pending`, nikada automatski `no_show`.
+- `customer_late` otkazi prikazani su zasebno po datumu treninga, uključujući
+  kasnije otkazane termine. Pravovremeni otkaz, move i otkaz studija ne ulaze
+  u taj broj. Otkazani termini isključeni su iz kapaciteta i popunjenosti.
+- Slobodna mjesta = kapacitet minus potvrđena mjesta; za otkazani termin nema
+  dostupnosti. Slobodna mjesta prošlog termina nisu mogućnost nove rezervacije.
+- Prazan obuhvat ima nule i `occupancy: null` / „Nema kapaciteta”; postojeći
+  kapacitet bez rezervacija daje stvarnih 0 %. Nema prihoda ni Fathom brojki.
+
+Zbrojevi su SQL agregati cijelog obuhvata, ne samo trenutačne stranice.
+Popisi imaju 25 redaka po stranici i stabilno sortiranje; tenant ključevi
+ograničavaju sve joinove. Studijski kontekst dolazi iz hosta i ovlasti, ne iz
+klijentskog `tenant_id`. Nema cachea izvještaja ni novih tablica/ovisnosti.
+
+Provjere izvršene 21.–22. listopada 2026.:
+
+```powershell
+php artisan test --compact tests/Feature/OperationalDashboardTest.php tests/Feature/StudioAdministrationTest.php tests/Feature/PlatformTenantTest.php tests/Feature/StudioAttendanceTest.php
+php vendor/bin/phpstan analyse --memory-limit=512M --no-progress
+php vendor/bin/pint --dirty --format agent
+npm run types:check
+npx vp fmt resources/js/components/OperationalDashboard.vue resources/js/types/operational-dashboard.ts resources/js/pages/studio/Dashboard.vue resources/js/pages/platform/Dashboard.vue resources/js/layouts/PlatformLayout.vue
+npx vp lint resources/js/components/OperationalDashboard.vue resources/js/types/operational-dashboard.ts resources/js/pages/studio/Dashboard.vue resources/js/pages/platform/Dashboard.vue resources/js/layouts/PlatformLayout.vue
+npm run build
+php artisan route:list --path=dashboard --except-vendor
+git diff --check
+```
+
+**86 testova / 1.076 assertiona prolazi** na zasebnom testnom MySQL-u,
+uključujući 16 novih scenarija za omjer zbrojeva, evidenciju, prazni obuhvat,
+straničenje, DST, validaciju i ovlasti. Statičke provjere, format/lint i
+client/SSR build prolaze. Build ima postojeća upozorenja o opcionalnom
+`fontaine`, sourcemapi i trajanju Wayfinder plugina; sandbox `spawn EPERM`
+riješen je pokretanjem builda i frontend alata uz odobrenje izvan sandboxa.
+
+Stvarni manager pregled i GET promjena razdoblja provjereni su u pregledniku.
+Popunjeni studijski i platformski prikazi pregledani su na desktopu i 390 px,
+uključujući tipkovnicu, tablice i kontekst otkazanog termina. Za njih su
+korišteni jasno označeni testni propsi samo u pregledniku, bez upisa poslovnih
+podataka. Stvarni platformski auth i agregati provjereni su HTTP testom s 2FA;
+novi browser prolazak platformskog 2FA i zasebna živa SSR regresija nisu izvedeni.
+Puna zbirka ostaje za `php artisan test --compact` i M2-14.

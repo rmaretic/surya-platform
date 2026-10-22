@@ -2,11 +2,14 @@
 
 use App\Http\Controllers\Auth\TwoFactorSettingsController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\CustomerPortalController;
 use App\Http\Controllers\OwnerInvitationController;
+use App\Http\Controllers\PlatformDashboardController;
 use App\Http\Controllers\PlatformTenantController;
 use App\Http\Controllers\PublicStudioController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StaffInvitationController;
+use App\Http\Controllers\StudioAttendanceController;
 use App\Http\Controllers\StudioAvailabilityController;
 use App\Http\Controllers\StudioCancellationController;
 use App\Http\Controllers\StudioCatalogController;
@@ -19,6 +22,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicStudioController::class, 'home'])->name('home');
 Route::get('about', [PublicStudioController::class, 'about'])->name('about');
+Route::get('schedule', [CustomerPortalController::class, 'schedule'])->name('schedule');
+Route::get('reserve', [CustomerPortalController::class, 'schedule'])
+    ->middleware(['auth:web', 'verified', 'can:customer-portal'])->name('reserve');
 
 require __DIR__.'/auth.php';
 
@@ -35,12 +41,12 @@ foreach (['web' => '', 'platform' => 'platform'] as $guard => $prefix) {
                     ->middleware([EnsureTwoFactorEnrolled::class, 'can:studio-administration'])->name('dashboard');
             } else {
                 Route::inertia('account', 'auth/Account')->middleware(EnsureTwoFactorEnrolled::class)->name('account');
-                Route::get('dashboard', [PlatformTenantController::class, 'index'])
-                    ->middleware([EnsureTwoFactorEnrolled::class, 'can:viewAny,App\Models\Tenant'])->name('dashboard');
+                Route::get('dashboard', [PlatformDashboardController::class, 'index'])
+                    ->middleware([EnsureTwoFactorEnrolled::class, 'can:platform.analytics.read'])->name('dashboard');
             }
         });
 }
-Route::get('portal', [StudioController::class, 'account'])
+Route::get('portal', [CustomerPortalController::class, 'index'])
     ->middleware(['auth:web', 'verified', 'can:customer-portal'])->name('portal');
 Route::post('bookings', [BookingController::class, 'store'])
     ->middleware(['auth:web', 'verified', EnsureTwoFactorEnrolled::class])->name('bookings.store');
@@ -56,6 +62,8 @@ Route::prefix('studio')->name('studio.')
     ->middleware(['auth:web', 'verified', EnsureTwoFactorEnrolled::class, 'can:studio-administration'])
     ->group(function (): void {
         Route::get('profile', [StudioController::class, 'profile'])->name('profile.edit');
+        Route::get('attendance', [StudioAttendanceController::class, 'index'])->name('attendance.index');
+        Route::post('attendance/{booking}', [StudioAttendanceController::class, 'store'])->name('attendance.store');
         Route::get('catalog', [StudioCatalogController::class, 'index'])->name('catalog.index');
         Route::get('credits', [StudioCreditController::class, 'index'])->name('credits.index');
         Route::post('credits', [StudioCreditController::class, 'store'])->name('credits.store');

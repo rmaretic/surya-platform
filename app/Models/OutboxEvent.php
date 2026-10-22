@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\BelongsToTenant;
+use Carbon\CarbonImmutable;
 use Database\Factories\OutboxEventFactory;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
@@ -16,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $booking_id
  * @property int|null $class_session_id
  * @property int $recipient_user_id
+ * @property CarbonImmutable $available_at
+ * @property array<string, mixed> $payload
  */
 #[UseEloquentBuilder(TenantBuilder::class)]
 #[Hidden(['payload'])]

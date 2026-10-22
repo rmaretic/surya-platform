@@ -64,7 +64,7 @@ test('platform operator sees real counts and can search paginated studios by nam
     Tenant::factory()->active()->count(26)->create();
     $tenant = createPlatformStudio($this);
 
-    $this->get('http://platform.yoga.test/platform/dashboard')->assertInertia(fn (Assert $page) => $page
+    $this->get('http://platform.yoga.test/platform/tenants')->assertInertia(fn (Assert $page) => $page
         ->component('platform/Tenants')->where('counts.active', 26)->where('counts.pending', 1)
         ->where('counts.suspended', 0)->where('tenants.total', 27)->has('tenants.data', 25));
     $this->get('http://platform.yoga.test/platform/tenants?search=new.yoga.test')->assertInertia(fn (Assert $page) => $page

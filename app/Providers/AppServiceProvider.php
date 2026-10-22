@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Auth\AdministrativeAccess;
+use App\Policies\AttendancePolicy;
 use App\Policies\StudioCatalogPolicy;
+use App\Policies\TenantPolicy;
 use App\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -35,6 +37,8 @@ class AppServiceProvider extends ServiceProvider
             Log::warning('SSR rendering failed; using client rendering.', ['type' => $event->type->value]);
         });
         Gate::define('studio-administration', [AdministrativeAccess::class, 'studio']);
+        Gate::define('platform.analytics.read', [TenantPolicy::class, 'viewAny']);
+        Gate::define('studio-attendance', [AttendancePolicy::class, 'manage']);
         Gate::define('customer-portal', [AdministrativeAccess::class, 'portal']);
         Gate::define('studio-catalog', [StudioCatalogPolicy::class, 'manage']);
         Gate::define('studio-pricing', [StudioCatalogPolicy::class, 'pricing']);

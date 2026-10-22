@@ -8,6 +8,7 @@ import { index as schedule } from '@/routes/studio/schedule';
 import { index as availability } from '@/routes/studio/availability';
 import { index as credits } from '@/routes/studio/credits';
 import { index as cancellations } from '@/routes/studio/cancellations';
+import { index as attendance } from '@/routes/studio/attendance';
 const page = usePage<{
     studioName: string;
     studioAccess: {
@@ -85,6 +86,12 @@ const page = usePage<{
                         :href="credits()"
                         class="hover:underline"
                         >Paketi i krediti</Link
+                    >
+                    <Link
+                        class="hover:underline"
+                        v-if="page.props.studioAccess.administration"
+                        :href="attendance()"
+                        >Dolasci</Link
                     >
                     <Link :href="account()" class="hover:underline"
                         >Moj račun</Link

@@ -2,8 +2,11 @@
 import { Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { usePublicMotion } from '@/composables/usePublicMotion';
-import { home, about, login } from '@/routes';
-defineProps<{ name: string; current: 'home' | 'about' }>();
+import { home, about, login, schedule, portal } from '@/routes';
+defineProps<{
+    name: string;
+    current: 'home' | 'about' | 'schedule' | 'portal';
+}>();
 const root = ref<HTMLElement | null>(null);
 usePublicMotion(root);
 </script>
@@ -15,6 +18,16 @@ usePublicMotion(root);
                 ><span aria-hidden="true">✳</span> {{ name }}</Link
             >
             <nav aria-label="Javna navigacija">
+                <Link
+                    :href="schedule()"
+                    :aria-current="current === 'schedule' ? 'page' : undefined"
+                    >Raspored</Link
+                >
+                <Link
+                    :href="portal()"
+                    :aria-current="current === 'portal' ? 'page' : undefined"
+                    >Moj studio</Link
+                >
                 <Link
                     :href="home()"
                     :aria-current="current === 'home' ? 'page' : undefined"
@@ -193,5 +206,47 @@ a[aria-current='page'] {
     .lotus-site :deep(.lotus-contact) {
         border-radius: 64px 0 0 0;
     }
+}
+.lotus-site :deep(.customer-content) {
+    max-width: 1200px;
+    margin-inline: auto;
+    padding: 56px 24px;
+}
+.lotus-site :deep(.portal-card) {
+    padding: 24px;
+    border: 1px solid var(--site-line);
+    border-radius: 24px;
+    min-width: 0;
+}
+.lotus-site :deep(.customer-content input:not([type='checkbox'])),
+.lotus-site :deep(.customer-content select) {
+    border: 1px solid var(--site-line);
+    border-radius: 6px;
+    padding: 10px;
+    color: #142727;
+    background: #fffaf0;
+    max-width: 100%;
+    min-width: 0;
+}
+.lotus-site :deep(.customer-content button),
+.lotus-site :deep(.portal-action) {
+    padding: 12px 20px;
+    background: #354b3b;
+    color: #fffaf0;
+    border-radius: 24px;
+    cursor: pointer;
+    text-align: center;
+}
+.lotus-site :deep(.customer-content button:disabled) {
+    opacity: 0.55;
+    cursor: default;
+}
+.lotus-site :deep(.customer-content :focus-visible) {
+    outline: 2px solid #354b3b;
+    outline-offset: 4px;
+}
+.lotus-site :deep(.customer-content [aria-current='page']) {
+    text-decoration: underline;
+    text-underline-offset: 5px;
 }
 </style>

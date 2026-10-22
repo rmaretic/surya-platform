@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
 import { index, create } from '@/routes/platform/tenants';
-import { account, logout } from '@/routes/platform';
+import { account, logout, dashboard } from '@/routes/platform';
 </script>
 
 <template>
@@ -25,6 +25,11 @@ import { account, logout } from '@/routes/platform';
                     aria-label="Platform administracija"
                     class="flex flex-wrap items-center gap-5 text-sm"
                 >
+                    <Link
+                        :href="dashboard()"
+                        class="underline-offset-4 hover:underline"
+                        >Pregled</Link
+                    >
                     <Link
                         :href="index()"
                         class="underline-offset-4 hover:underline"

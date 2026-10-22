@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\BelongsToTenant;
+use Carbon\CarbonImmutable;
 use Database\Factories\AttendanceRecordFactory;
 use Illuminate\Database\Eloquent\Attributes\UseEloquentBuilder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $tenant_id
  * @property int $booking_id
  * @property int|null $recorded_by_user_id
+ * @property CarbonImmutable|null $recorded_at
  */
 #[UseEloquentBuilder(TenantBuilder::class)]
 class AttendanceRecord extends Model

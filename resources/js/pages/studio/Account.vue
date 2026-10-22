@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { useTwoFactorRoutes } from '@/composables/useTwoFactorRoutes';
+import { portal } from '@/routes';
 import type { User } from '@/types/auth';
 defineProps<{ role: string }>();
 const page = usePage<{ auth: { user: User } }>();
@@ -33,8 +34,9 @@ const roles: Record<string, string> = {
             </div>
         </dl>
         <p v-if="role === 'customer'" class="text-muted-foreground">
-            Dobro došli u portal polaznika. Rezervacija termina dolazi kasnije;
-            trenutačno nije dostupna.
+            <Link :href="portal()" class="underline"
+                >Moje rezervacije, raspored i paketi →</Link
+            >
         </p>
         <Link :href="security.settings()" class="underline underline-offset-4"
             >Sigurnost računa i 2FA</Link

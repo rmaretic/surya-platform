@@ -14,7 +14,7 @@ class RequireTenantAuthenticationReady
     /** @param Closure(Request): Response $next */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->is('/', 'about', 'up', 'bookings', 'bookings/*', '_boost/browser-logs', '_inertia/devtools/*', 'platform/tenants', 'platform/tenants/*', 'owner-invitations/*', 'studio/*', 'staff-invitations/*')
+        if ($request->is('/', 'about', 'schedule', 'reserve', 'up', 'bookings', 'bookings/*', '_boost/browser-logs', '_inertia/devtools/*', 'platform/tenants', 'platform/tenants/*', 'owner-invitations/*', 'studio/*', 'staff-invitations/*')
             || preg_match('#^(platform/)?(login|logout|register|forgot-password|reset-password(?:/[^/]+)?|email/verify(?:/[^/]+/[^/]+)?|email/verification-notification|account|dashboard|portal|two-factor-challenge|settings/two-factor|user/(?:confirm-password|confirmed-password-status|two-factor-authentication|confirmed-two-factor-authentication|two-factor-qr-code|two-factor-secret-key|two-factor-recovery-codes))$#', $request->path())) {
             return $next($request);
         }

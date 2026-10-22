@@ -40,7 +40,7 @@ class HandleInertiaRequests extends Middleware
     {
         Inertia::flushShared();
 
-        if ($request->routeIs('home', 'about')) {
+        if ($request->routeIs('home', 'about', 'schedule')) {
             Inertia::pullFlashed($request);
 
             return [

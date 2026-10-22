@@ -1,6 +1,6 @@
 # Napredak
 
-Aktualni inkrement: **M2-08 — otkaz i premještanje**.
+Aktualni inkrement: **M2-13 — operativni dashboardi**.
 Prethodni pregled: [prihvat svih M1 zadataka](razvojni-backlog-m1.md#pregled-prihvata--8-listopada-2026)
 i [predaja M1-14](#m1-14--demonstracija-i-predaja). Zapisi ispod su datirani
 rezultati pojedinih inkremenata; ranije navedene buduće funkcionalnosti i
@@ -1132,3 +1132,135 @@ izvršene; client/SSR build jest. Razvojni poslovni podaci nisu mijenjani.
 Postojeći otvoreni M1 prihvati ostaju. Sljedeći konkretan korak: **M2-10 —
 raspored i portal na oba dizajna**. Za punu regresiju pokrenuti
 `php artisan test --compact`.
+
+## M2-10 — raspored i portal na oba dizajna (16. listopada 2026.)
+
+Status: **implementirano i provjereno za opseg M2-10**.
+
+- Javni dnevni raspored filtrira vrstu, instruktora i datum; prikazuje grupne
+  termine i izračunate privatne slotove, trajanje, kapacitet, kreditni trošak,
+  rok otkaza i zonu studija. Nema javnog popisa polaznika ni osobnih propsa.
+- Zaštićeni odabir čuva namjeru kroz prijavu, bez rezervacije unaprijed.
+  Kredit se prikazuje prema datumu i vrsti; postojeći booking servis ponovno
+  provjerava sva prava pod lockom. Nema online prodaje ni neplaćenog bookinga.
+- Portal: vlastite buduće/prošle rezervacije, detalj i posljedice otkaza,
+  premještanje, paginirani paketi i kreditna povijest bez privatnih bilješki,
+  autora i referenci vanjske kupnje. Salda koristi postojeći `CreditLedger`.
+- Lotus i Balance zadržavaju svoje layoute; zajedničke Vue komponente koriste
+  Wayfinder i postojeće JSON radnje. Retry zadržava operation key, obrada
+  isključuje ponovni klik. Uspjeh isključivo u `useHttp.onSuccess`: v3 za 422
+  razriješi Promise bez rezultata, što je otkriveno i ispravljeno u browseru.
+- **13 novih testova / 275 assertiona** prolazi na MySQL-u. Završna regresija
+  šest datoteka: **170 testova / 1.769 assertiona**. Zasebno **17 SSR testova /
+  263 assertiona** uz stvarni Node proces. PHPStan, Vue typecheck, Pint,
+  ciljani frontend lint/format, client/SSR build i pregled ruta prolaze.
+- Stvarne prijave polaznika i prazni portali pregledani na oba lokalna studija.
+  Popunjeni prikazi, puni termin, 422, retry i otkaz tipkovnicom pregledani uz
+  označene testne propse i presretnute mutacije; razvojni poslovni zapisi nisu
+  stvarani. Oba dizajna bez horizontalnog preljeva na 390 px. Presretanja
+  uklonjena; stvarni uspješni booking/move/otkaz pokriveni HTTP testovima.
+- Stvarni HTML rasporeda u slijedu Lotus → Balance → Lotus sadrži SSR sadržaj
+  bez korisničkog emaila; provjeren i SSR prijavljenog Balance portala.
+  Lokalni Vite procesi tražili su izvršavanje izvan sandboxa; browser pregled
+  dovršen na buildu. Nema novih migracija ni ovisnosti.
+
+Puna zbirka nije pokretana; za nju pokrenuti `php artisan test --compact`.
+Višeprocesna booking regresija nije ponavljana jer transakcijske radnje nisu
+mijenjane. Isporuka obavijesti ostaje M2-12; demo poslovni seed M2-15.
+Završna provjera (18. listopada 2026.): potvrđen uspješan client/SSR build
+nakon posljednjeg ispravka teksta. Prethodni zastoj odobrenja zbog limita
+korištenja je razriješen; Wayfinder je nastavio nakon pokretanja lokalnog
+MySQL-a. Nema preostalih blokada za M2-10.
+
+Sljedeći konkretan korak: **M2-11 — ručni dolasci**.
+
+## M2-11 — ručni dolasci (20. listopada 2026.)
+
+Status: **implementirano i provjereno za opseg M2-11**.
+
+- Dnevni pregled termina i minimalni popis polaznika: owner/manager cijeli
+  studio, instruktor samo vlastiti aktivni profil. Backend provjerava tenant,
+  ulogu, aktivnost, verifikaciju i postojeći owner 2FA uvjet.
+- Ručni `present` s autorom/vremenom; `no_show` isključivo nakon kraja uz
+  potvrdu. Neevidentirani ostaju `pending`. Ispravak zahtijeva razlog/audit;
+  otkazani booking nema check-in. Nema dodatnog debita ni QR-a.
+- Tenant lock, atomski upis/audit, jedinstvena evidencija, UUID retry i provjera
+  očekivanog statusa. Stara operacija ne poništava kasniji ispravak. I ponovljena
+  potvrda istog stanja s novim UUID-om pamti se bez promjene autora/vremena.
+- **20 novih testova / 256 assertiona** prolazi na MySQL-u. Regresija dolazaka,
+  studijskih otkaza, portala i administracije: **81 test / 1.080 assertiona**.
+  Završna izmjena potpisa audit helpera provjerena ponavljanjem ciljanih testova.
+- Pint, PHPStan, Vue typecheck, ciljani frontend lint/format, client/SSR build,
+  pregled dvije rute i diff provjera prolaze. Bez novih migracija/ovisnosti.
+- Stvarna manager prijava i prazni prikaz pregledani. Popunjeni desktop i
+  mobilni prikaz (390 px), potvrda, ispravak i tipkovnica provjereni uz označene
+  testne propse i blokirane poslovne mutacije. Nema horizontalnog preljeva;
+  otkazana rezervacija nema kontrole. Poslovni upisi pokriveni HTTP testovima.
+- README i backlog ažurirani; zatečene izmjene M2-10 sačuvane. Lokalni HTTP
+  server pokrenut, zastarjeli Vite hot marker uklonjen radi pregleda builda.
+
+Puna zbirka, novi višeprocesni attendance test i zasebna živa SSR regresija
+nisu pokretani; client/SSR build jest. Razvojni poslovni podaci nisu mijenjani.
+Sljedeći korak: **M2-12 — obavijesti i podsjetnici**. Za punu regresiju
+pokrenuti `php artisan test --compact`.
+
+## M2-12 — obavijesti i podsjetnici (21. listopada 2026.)
+
+**Status: implementirano i funkcionalno provjereno za lokalni M2 opseg.**
+
+- Dispatcher/scheduler i tenant worker obrađuju transakcijski outbox za
+  potvrde, otkaz/move, promjenu resursa i povrat iznimkom. Hrvatski HTML i
+  tekstualni predlošci koriste naziv studija i verificirani portal URL.
+- Podsjetnik 24 sata prije; radna tolerancija zakašnjenja 15 minuta.
+  Kasnije potvrđeni booking, otkaz, promijenjena verzija i zastarjele poruke
+  ne šalju reminder. Već poslani/neizvjesni reminder ne ponavlja se.
+- Tenant/outbox lock prisvaja pokušaj, SMTP je izvan transakcije. Pending
+  događaji oporavljaju se ponovnim dispatchom; prekinuti i neizvjesni
+  pokušaji traže provjeru inboxa. Najviše tri pokušaja uz ručno razrješenje.
+  README opisuje stanja i preostali prozor između provjere i SMTP prihvata.
+- Dodan 31 test. Završna regresija šest datoteka: **225 prolazi,
+  1.622 assertiona**, MySQL. Uključeni rollback, dedup, oporavak, vremenske
+  granice, tenant zaštita, HTML escaping i stvarni SMTP/Mailpit za oba studija.
+- PHPStan, Pint i `git diff --check` prolaze. Artisan help i minutni scheduler
+  pregledani; `schedule:list` koristi procesni `CACHE_STORE=array` jer
+  razvojni MySQL nije pokrenut. Pokrenuti postojeći testni MySQL i Mailpit.
+- Nema migracija, novih ovisnosti ni izmjena razvojnih poslovnih podataka.
+  Zatečene M2-10/M2-11 izmjene sačuvane. README i backlog ažurirani.
+
+Puna zbirka, novi višeprocesni worker race i pregled poruke u browseru nisu
+izvršeni; sadržaj inboxa provjeren je Mailpit API-jem. Frontend/SSR build
+nije pokretan jer nema promjena Vue/CSS aplikacije. SES ostaje izvan opsega.
+Sljedeći korak: **M2-13 — operativni dashboardi**. Za punu regresiju
+pokrenuti `php artisan test --compact`.
+
+## M2-13 — operativni dashboardi (22. listopada 2026.)
+
+**Status: dovršeno za opseg M2-13.**
+
+- Studijski pregled zamijenio placeholder stvarnim SQL agregatima i terminima;
+  owner/manager vide svoj studio, instruktor samo vlastiti profil. Platforma
+  ima odvojen pregled svih studija uz `platform.analytics.read`, bez osobnih popisa.
+- Datumski filtar (zadano danas + šest dana, najviše 366 dana), eksplicitna zona
+  i obuhvat; kapacitet sa samog termina, status, confirmed/slobodna mjesta,
+  pending/present/no_show, odvojeni kasni otkazi i otkazani termini.
+- Ukupna popunjenost iz brojnika/nazivnika cijelog obuhvata, ne prosjek stopa
+  niti samo trenutačna stranica. Prazan kapacitet razlikuje se od stvarnih 0 %.
+  Lokalni dani pretvaraju se u UTC granice, uključujući DST. Nema lažnog prihoda.
+- **16 novih scenarija**; regresija dashboarda, studijske administracije,
+  platformskog registra i dolazaka: **86 testova / 1.076 assertiona**, MySQL.
+  Stari test registra usklađen s njegovom postojećom rutom `/platform/tenants`.
+- PHPStan, Pint, Vue typecheck, ciljani frontend lint/format, client/SSR build,
+  dvije dashboard rute i diff provjera prolaze. Postojeća build upozorenja ostaju.
+- Stvarni manager prikaz i GET filtar pregledani; popunjeni studijski/platformski
+  desktop i mobilni prikazi (390 px) provjereni s označenim testnim propsima.
+  Tipkovnica i pomicanje tablica rade, nema preljeva stranice ni novih JS grešaka.
+  Browser fixture ne mijenja bazu; stvarni auth/agregati pokriveni HTTP testovima.
+- Pokrenut postojeći zaustavljeni razvojni MySQL i lokalni server na 8001 radi QA.
+  Privremeni limit browser alata i sandbox blokada procesa razriješeni; nema
+  migracija, novih ovisnosti, deploya ni poslovnih upisa u razvojnu bazu.
+  Zatečene izmjene M2-10–M2-12 sačuvane; README i backlog ažurirani.
+
+Puna zbirka, zasebna živa SSR regresija i novi browser prolazak platformskog
+2FA nisu izvršeni; client/SSR build i HTTP platformski 2FA test jesu.
+Sljedeći korak: **M2-14 — konkurentni testovi i CI**. Za punu regresiju
+pokrenuti `php artisan test --compact`.

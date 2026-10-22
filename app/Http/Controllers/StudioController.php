@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\ReadOperationalDashboard;
 use App\Actions\UpdateTenantProfile;
 use App\Models\TenantProfile;
 use App\Models\User;
@@ -13,11 +14,14 @@ use Inertia\Response;
 
 class StudioController extends Controller
 {
-    public function dashboard(Request $request): Response
+    public function dashboard(Request $request, ReadOperationalDashboard $dashboard): Response
     {
         Gate::authorize('studio-administration');
 
-        return Inertia::render('studio/Dashboard', ['role' => $this->actor($request)->role]);
+        return Inertia::render('studio/Dashboard', [
+            'role' => $this->actor($request)->role,
+            ...$dashboard->studio($this->actor($request), $request->only(['from', 'to', 'page'])),
+        ]);
     }
 
     public function account(Request $request): Response
