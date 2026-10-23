@@ -33,6 +33,7 @@ function bookingRace(array $operations, array $lockedTenants, ?int $independentW
             $process = new Process([PHP_BINARY, base_path('tests/BookingRaceWorker.php')], base_path(), ['APP_ENV' => 'testing'], timeout: 30);
             $process->setInput(json_encode([
                 ...$operation, 'barrier' => $address, 'database' => config('database.connections.mysql'),
+                'now' => now()->toIso8601String(),
             ], JSON_THROW_ON_ERROR));
             $process->start();
             $processes[] = $process;

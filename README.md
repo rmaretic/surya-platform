@@ -1,7 +1,7 @@
 # Surya
 
 Laravel + Vue + Inertia platforma za yoga studije. Trenutačni inkrement je
-[M2-07: atomski booking](#atomski-booking--m2-07).
+[M2-14: konkurentni testovi i CI](#konkurentni-testovi-i-ci--m2-14).
 M1 još nije potpuno prihvaćen: otvorene provjere i dokazi za svih
 14 zadataka nalaze se u [pregledu prihvata](docs/razvojni-backlog-m1.md#pregled-prihvata--8-listopada-2026).
 
@@ -1993,3 +1993,176 @@ korišteni jasno označeni testni propsi samo u pregledniku, bez upisa poslovnih
 podataka. Stvarni platformski auth i agregati provjereni su HTTP testom s 2FA;
 novi browser prolazak platformskog 2FA i zasebna živa SSR regresija nisu izvedeni.
 Puna zbirka ostaje za `php artisan test --compact` i M2-14.
+
+## Konkurentni testovi i CI — M2-14
+
+`tests/BookingRace.php` pokreće odvojene PHP procese s različitim MySQL
+connection ID-jevima. Socket barijera čeka sve sudionike; roditelj drži tenant
+coordination lock dok svaki worker ne najavi pokušaj zaključavanja. Nema
+sekvencijalne zamjene za race ni oslanjanja na proizvoljan sleep. Sat se prenosi
+iz testa u svaki worker. Helper odbija sve osim `surya_testing` na portu 3308;
+commit fixturea i ponovno stvaranje tablica odnose se samo na tu bazu.
+Ne pokretati dvije testne zbirke istodobno nad istom bazom.
+
+Konkurentna zbirka ima 20 scenarija. Četiri nova pokrivaju istodobno prisvajanje
+iste obavijesti, odbijanje otkazanog podsjetnika u dva workera, isti upis dolaska
+te suprotstavljene upise prisutan/nedolazak. Provjeravaju jedan pokušaj isporuke,
+čišćenje tenant konteksta, audit, odbijanje zastarjele evidencije i nepromijenjen
+ledger. Notification fake je lokalni po procesu; stvarni SMTP/Mailpit ostaje u
+`BookingNotificationTest` i `LocalAuthenticationMailTest`.
+
+Mapa obveznih regresija:
+
+| Područje                                                                                                                                       | Testne datoteke u `tests/Feature`                                                                                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Zadnje mjesto/kredit, privatni i grupni konflikti, preklop polaznika, raspored/otkaz nasuprot bookingu, duplikat/reversal, move i kompenzacija | `BookingConcurrencyTest`, `CreateBookingTest`, `ManageBookingTest`, `StudioCancellationTest`                                                                                                               |
+| Istek granta, oba DST prijelaza i točne granice rokova                                                                                         | `StudioCreditTest`, `StudioScheduleTest`, `StudioAvailabilityTest`, `CreateBookingTest`, `ManageBookingTest`                                                                                               |
+| Tuđi ID, cache/job, hostname, uloge, deaktivacija i auth domene                                                                                | `TenantIsolationTest`, `TenantJobIsolationTest`, `TenantResolutionTest`, `TenantAuthenticationTest`, `TenantAuthenticationBoundaryTest`, `StudioCatalogTest`, `RoleAndTwoFactorTest` i endpoint testovi M2 |
+| Stari reminder, rollback, oporavak outboxa i lokalni inbox                                                                                     | `BookingNotificationTest`, `BookingConcurrencyTest`, `LocalAuthenticationMailTest`                                                                                                                         |
+| Ponovljeni seed, očuvanje podataka i MySQL constraintovi                                                                                       | `LocalDemoSeederTest`, `M2MigrationTest`, `BookingFoundationTest`                                                                                                                                          |
+| Oba dizajna, portal, dolasci, agregati i živi SSR                                                                                              | `CustomerPortalTest`, `StudioAttendanceTest`, `OperationalDashboardTest`, `PublicStudioTest`, `PublicStudioSsrTest`                                                                                        |
+
+CI zadržava postojeće zaključane ovisnosti, MySQL/Mailpit setup i dvostruki
+lokalni seed. Frontend build dolazi iz `composer setup`; format/lint, Vue tipovi,
+Pint i PHPStan imaju zasebne korake. Puna M1/M2 zbirka radi uz živi SSR, zatim
+konkurentna zbirka još dvaput. U slučaju pada ispisuju se status servisa i
+ograničeni MySQL/Mailpit/SSR logovi. Timeout je 45 minuta. M2 backlog ima isti
+izuzetak od automatskog formatiranja kao postojeći M1 backlog.
+
+Lokalne naredbe:
+
+```powershell
+docker compose up -d --wait
+npm run check
+npm run types:check
+npm run build
+php vendor/bin/pint --dirty --format agent
+php vendor/bin/phpstan analyse --memory-limit=512M --no-progress
+php artisan test --compact tests/Feature/BookingConcurrencyTest.php
+node bootstrap/ssr/app.js
+```
+
+Uz aktivni SSR u drugom terminalu:
+
+```powershell
+$env:SSR_TEST_URL = 'http://127.0.0.1:13714'
+php artisan test --compact
+Remove-Item Env:SSR_TEST_URL
+```
+
+Rezultati M2-14 i ograničenja bilježe se u `docs/progress.md`. GitHub Actions
+izvršavanje zahtijeva push/PR; lokalna provjera nije tvrdnja o udaljenom CI runu.
+M2-15 proširuje demo seed poslovnim scenarijem opisanim u nastavku.
+
+## Demo i predaja — M2-15
+
+[LocalBookingDemoSeeder](database/seeders/LocalBookingDemoSeeder.php) poziva
+postojeći M1 demo, zatim dodaje poslovne podatke samo studijima na domenama
+`lotus.yoga.test` i `balance.yoga.test`. Ostali studiji ostaju netaknuti.
+Nema novih migracija ni ovisnosti; na postojećoj instalaciji primijeni sve
+prethodne migracije pa eksplicitno pokreni seed:
+
+```powershell
+php artisan migrate --no-interaction
+php artisan db:seed --class=LocalBookingDemoSeeder --no-interaction
+```
+
+Seed je dopušten samo u `local` i `testing`, čak i uz `--force`. Prvi poslovni
+unos zahtijeva prazan M2 katalog u oba demo studija. Postojeće vrste, prostore,
+instruktorske profile, proizvode ili pravila neće prepisati: konflikt poništava
+cijelu transakciju. Isto vrijedi za postojeći `customer2@example.test` prije
+prvog M2 unosa. Ne brisati poslovne podatke radi pokretanja seeda.
+
+Tenant lock i audit `demo.m2_seeded` čuvaju jednokratni unos. Ponavljanje
+ne vraća otkazane rezervacije, potrošena prava, datume, lozinke ni 2FA.
+M1 pravilo dopunjavanja praznih `null` polja profila i dalje vrijedi.
+Seed ne pomiče sat aplikacije i nema javnog endpointa za kontrolu vremena.
+Datumi su relativni prvom pokretanju; nakon što demo ostari, nove termine
+i prava kreiraj kroz administraciju. Ponovni seed nije reset demonstracije.
+
+Početni sadržaj **svakog** demo studija (D = lokalni datum prvog seeda):
+
+| Podaci              | Početno stanje                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| Katalog             | DEMO grupa i DEMO privatni, dvije prostorije i dva instruktorska profila                   |
+| Instruktori         | Postojeći instructor vodi grupe; manager vodi privatne termine bez promjene uloge          |
+| Povijest            | D−5 do D−1 u 18:00, pet potvrđenih dolazaka sa statusom pending                            |
+| Puni termin         | D+2 u 18:00, kapacitet 1, rezerviran za drugog polaznika                                   |
+| Zadnje mjesto       | D+3 u 18:00, kapacitet 2, jedan potvrđen polaznik                                          |
+| Slobodni termin     | D+4 u 18:00, kapacitet 2, bez rezervacija                                                  |
+| Otkaz               | D+5 u 18:00, pravovremeno otkazana rezervacija prvog polaznika i jedan reversal            |
+| Privatna dostupnost | Svaki dan 09:00–13:00 tijekom 56 dana; 60 minuta, korak 30, buffer 15 prije/poslije        |
+| Proizvodi           | 5 grupnih / 45 dana, 10 grupnih / 90 dana, 5 privatnih / 45 dana                           |
+| Prvi polaznik       | Aktivnih 5 grupnih i 5 privatnih; potrošen grupni paket i istekao grupni paket sa saldom 5 |
+| Drugi polaznik      | 8 preostalih grupnih od 10 i 5 privatnih                                                   |
+
+Sva vremena prikazuju zonu studija. Buffer mora stati u privatni prozor,
+pa prvi ponuđeni početak nije 09:00. Svako pravo ima izvor `demo`, autora,
+vrijeme, snapshot i oznaku `M2-15 artificial local fixture` u administraciji.
+Povijest je eksplicitno umjetni lokalni unos s usklađenim debitima/povratom;
+ne predstavlja naplatu niti pojedinačne povijesne korisničke HTTP radnje.
+Audit bilježi uvoz. Nema seed emailova, queue poslova ni outbox potvrda za
+uvezeno stanje; naknadne radnje koriste postojeće poslovne servise i outbox.
+Scheduler poslije može stvoriti dospjele podsjetnike za aktivne rezervacije.
+
+Računi i obvezni owner/platform 2FA ostaju kao u [M1 demou](#demo-seed-i-lokalne-domene--m1-12).
+Novi `customer2@example.test` postoji zasebno u oba studija i koristi početnu
+lozinku svog studija iz te tablice. Nema poznate seed TOTP tajne.
+Javni `/schedule`, portal `/account`, administracija `/studio/schedule`,
+`/studio/credits`, `/studio/attendance` i `/studio/cancellations` koriste
+isti host studija. Platformski agregati su na `/platform/dashboard`.
+
+### Ponovljivi scenarij predaje
+
+Ovo je postupak za ručni pregled; automatizirani ekvivalent za oba studija je
+[LocalBookingDemoSeederTest](tests/Feature/LocalBookingDemoSeederTest.php).
+Za ponavljanje koristi novi budući termin i nove operation ključeve kroz UI,
+bez vraćanja starih podataka. Za različite korisnike koristi odvojene sesije.
+
+1. Owner završi 2FA, otvori raspored i kreira objavljenu DEMO grupu kapaciteta
+   jedan najmanje dva dana unaprijed, bez konflikta instruktora/prostora.
+   U Kreditima dodijeli prvom polazniku paket s izvorom **demo**.
+2. Prvi polaznik rezervira jedino mjesto. Drugi, koji također ima valjane
+   kredite, dobiva puni termin; njegov saldo ostaje nepromijenjen. Ponovljeni
+   klik prvoga ne stvara drugu rezervaciju ni debit.
+3. Prvi pravovremeno otkaže. Provjeri povrat jednog kredita na izvorni paket,
+   isti istek i oslobođeno mjesto. Ponovljeni otkaz ne dodaje drugi povrat.
+4. U privatnom rasporedu prvi potvrdi ponuđeni slot, npr. 10:00 najmanje dva
+   dana unaprijed. Drugi iz zastarjelog prikaza pokuša 10:30: backend odbija
+   preklapanje i ne troši kredit. Aktualni prikaz takav slot više ne nudi.
+5. Instruktor na Dolascima odabere datum D−1, potvrdi **Prisutan** za pending
+   rezervaciju i provjeri da nema novog debita. Ostali pending zapisi ne
+   postaju automatski no-show.
+6. Owner na Otkazima pregleda i otkaže drugi budući rezervirani termin,
+   primjerice D+2. Potvrdi razlog, otkaz bookinga i jedan povrat prava.
+7. Provjeri drugi studio: rezervacije, saldo i evidencija ostaju netaknuti.
+   Platform admin odabere isto razdoblje i usporedi agregate. Na početnom
+   seedu raspon D−5 do D+5 daje po studiju 9 termina, kapacitet 17,
+   7 confirmed, 10 slobodnih i 7 pending; ukupno 18 / 34 / 14 / 20 / 14.
+   Dodatni postojeći studiji mogu promijeniti platformski ukupni rezultat.
+
+Radna pravila: najava 2 h, horizont 56 dana, besplatni grupni otkaz 12 h,
+privatni 24 h; kasni otkaz ne vraća kredit. Studijski povrat ima najmanje
+7 dana valjanosti za vraćeno pravo. Ta pravila treba potvrditi prije prodaje.
+
+### Lokalni servisi i provjere predaje
+
+Za lokalni inbox pokreni Compose i slijedi [M2-12 naredbe](#obavijesti-i-podsjetnici--m2-12)
+za dispatcher, worker i scheduler u odvojenim terminalima. Mailpit koristi
+port 18025 za pregled i 11025 za SMTP prema [lokalnoj konfiguraciji](#baze-i-lokalni-email).
+Nova rezervacija i otkaz trebaju imati naziv, sadržaj i poveznice pravog
+studija. Seed sam ne pokreće dispatcher. Neizvjesne isporuke rješavaju se
+prema M2-12 postupku, bez slijepog retryja. Produkcijski SES nije uključen.
+
+```powershell
+php artisan test --compact tests/Feature/LocalBookingDemoSeederTest.php tests/Feature/LocalDemoSeederTest.php
+php vendor/bin/phpstan analyse --memory-limit=512M --no-progress
+php vendor/bin/pint --dirty --format agent
+```
+
+Testovi rade na zasebnom MySQL-u `surya_testing`, ne na razvojnoj bazi.
+Kontrola sata ostaje unutar testova. Za cijelu M1/M2 regresiju pokreni
+`php artisan test --compact` uz servise i SSR opisane u M2-14.
+Stvarni rezultati ove predaje zabilježeni su u [progressu](docs/progress.md#m2-15--demo-i-predaja-23-listopada-2026).
+Nema stvarne kartice, payment zapisa, fiskalnog računa ni prihoda platforme.
+M3 financijski tok i raniji otvoreni M1 prihvati ostaju zaseban opseg.

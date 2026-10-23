@@ -2,18 +2,24 @@
 
 /** Independent PHP/MySQL participant used only by BookingConcurrencyTest. */
 use App\Actions\CreateBooking;
+use App\Actions\ManageAttendance;
 use App\Actions\ManageBooking;
-use App\Actions\ManageStudioSchedule;
 use App\Actions\ManageStudioCancellation;
+use App\Actions\ManageStudioSchedule;
+use App\Actions\PrepareBookingNotification;
+use App\Jobs\DeliverBookingNotification;
+use App\Jobs\Middleware\UseTenantContext;
 use App\Models\Booking;
 use App\Models\ClassSession;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Notifications\BookingNotification;
 use App\TenantContext;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
 require __DIR__.'/../vendor/autoload.php';
@@ -25,8 +31,8 @@ if (! $app->environment('testing') || $input['database']['database'] !== 'surya_
 }
 config(['database.default' => 'mysql', 'database.connections.mysql' => $input['database']]);
 DB::purge('mysql');
-Carbon::setTestNow('2026-10-12 10:00:00 UTC');
-CarbonImmutable::setTestNow('2026-10-12 10:00:00 UTC');
+Carbon::setTestNow($input['now']);
+CarbonImmutable::setTestNow($input['now']);
 $tenant = Tenant::findOrFail($input['tenant_id']);
 app(TenantContext::class)->setTenant($tenant);
 $actor = User::findOrFail($input['actor_id']);
@@ -44,7 +50,17 @@ DB::connection()->beforeExecuting(function (string $query) use ($socket, &$annou
     }
 });
 try {
-    if (($input['action'] ?? 'booking') === 'schedule') {
+    if (($input['action'] ?? '') === 'notification') {
+        config(['mail.default' => 'array', 'mail.mailers.array.transport' => 'array']);
+        Notification::fake();
+        $job = new DeliverBookingNotification($tenant->id, $input['event_id']);
+        (new UseTenantContext($tenant->id))->handle($job, fn () => $job->handle(app(PrepareBookingNotification::class)));
+        $result = ['status' => 'ok', 'sent' => Notification::sent($actor, BookingNotification::class)->count(),
+            'context_cleared' => app(TenantContext::class)->tenant() === null];
+    } elseif (($input['action'] ?? '') === 'attendance') {
+        app(ManageAttendance::class)->handle($actor, Booking::findOrFail($input['booking_id']), $input['data']);
+        $result = ['status' => 'ok'];
+    } elseif (($input['action'] ?? 'booking') === 'schedule') {
         $session = isset($input['session_id']) ? ClassSession::findOrFail($input['session_id']) : new ClassSession;
         app(ManageStudioSchedule::class)->saveSession($actor, $session, $input['data']);
         $result = ['status' => 'ok'];

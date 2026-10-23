@@ -2,7 +2,7 @@
 
 Datum: 7. listopada 2026.  
 Izvor: specifikacija-platforme-v1.md (v1.6) i razvojni-backlog-m1.md.  
-Status (21. listopada 2026.): M2-01 pregledan i dokumentiran; M2-02–M2-05 implementirani i provjereni na MySQL-u. M2-06 implementiran i provjeren, uključujući vizualni prihvat. M2-07–M2-09 implementirani i provjereni, uključujući višeprocesne MySQL testove i administrativni prikaz M2-09. M2-10 implementiran i provjeren na oba dizajna. Potpuni M1 prihvat ostaje otvoren prema njegovoj matrici. M2-11 i M2-12 implementirani i provjereni. M2-13 dovršen i provjeren 22. listopada 2026.; M2-14–M2-15 još nisu implementirani.
+Status (21. listopada 2026.): M2-01 pregledan i dokumentiran; M2-02–M2-05 implementirani i provjereni na MySQL-u. M2-06 implementiran i provjeren, uključujući vizualni prihvat. M2-07–M2-09 implementirani i provjereni, uključujući višeprocesne MySQL testove i administrativni prikaz M2-09. M2-10 implementiran i provjeren na oba dizajna. Potpuni M1 prihvat ostaje otvoren prema njegovoj matrici. M2-11 i M2-12 implementirani i provjereni. M2-13 dovršen i provjeren 22. listopada 2026.; M2-14 dovršen uz završnu format/lint provjeru 23. listopada 2026. M2-15 dovršen za lokalni razvojni opseg 23. listopada 2026.; novi seed i automatizirani demo prolaze na MySQL-u.
 
 ## Cilj i granica faze
 
@@ -208,6 +208,8 @@ Platform admin dobiva agregate po studiju i ukupno, bez osobnih popisa. Instrukt
 
 **Ovisnosti:** M2-01–M2-13. **Veza:** AC01–AC07, AC10, AC12, AC21 i relevantni AC27–AC29.
 
+**Status (23. listopada 2026.): dovršeno za opseg M2-14.** [20 konkurentnih scenarija](../tests/Feature/BookingConcurrencyTest.php), uključujući četiri nova za obavijesti i dolaske; odvojeni PHP/MySQL procesi i zajednički testni sat. Ciljano **20 / 295 assertiona**; puna M1/M2 zbirka sa živim SSR-om i Mailpitom: **803 prolazi, 12 postojećih scaffold skipova / 6.125 assertiona**. PHPStan, Pint, Vue tipovi, client/SSR build i završni `npm run check` prolaze. Oba dizajna na desktopu/mobitelu i mobilni dolasci vizualno pregledani. [CI](../.github/workflows/tests.yml) razdvaja provjere i dodaje dva race ponavljanja. [Naredbe i mapa pokrivenosti](../README.md#konkurentni-testovi-i-ci--m2-14), [rezultati provjera](progress.md#m2-14--konkurentni-testovi-i-ci-22-listopada-2026). Udaljeni CI run nije pokrenut; M2-15 ostaje zaseban zadatak.
+
 Proširiti postojeći CI. Race testove izvršavati s odvojenim MySQL konekcijama/procesima i kontroliranim istodobnim početkom; sekvencijalni pozivi nisu race test. SQLite ne zamjenjuje MySQL provjeru lockova/constraintova.
 
 Obvezni slučajevi: zadnje mjesto/kredit; novi privatni intervali; grupni/privatni konflikt; preklop polaznika; booking nasuprot otkazu/promjeni rasporeda; duplikat/reversal; istek granta; oba DST prijelaza; granica roka; move na puni termin; kompenzacija; tuđi ID/cache/job; pogrešna uloga; deaktivacija; stari reminder; ponovljeni seed.
@@ -215,6 +217,8 @@ Obvezni slučajevi: zadnje mjesto/kredit; novi privatni intervali; grupni/privat
 **Prihvat:** poslovni i M1 testovi prolaze, frontend build/typecheck uredni. Ručno pregledani oba dizajna i mobilni dolasci. Zapisati izvršene provjere i blokade; ne tvrditi da neizvršeni test prolazi.
 
 ## M2-15 — demo i predaja
+
+**Status (23. listopada 2026.): dovršeno za lokalni razvojni opseg.** [Idempotentan lokalni seed](../database/seeders/LocalBookingDemoSeeder.php), [osam novih testova s demonstracijom za oba studija](../tests/Feature/LocalBookingDemoSeederTest.php) i [README predaja](../README.md#demo-i-predaja--m2-15). Produkcijska zabrana, rollback konflikta, očuvanje stanja nakon 100 dana, izvori prava, puni/slobodni termini, privatni slotovi, grantovi i pending dolasci. Ciljano **8 / 177 assertiona**, završna MySQL regresija **204 / 1.807 assertiona**; PHPStan i Pint prolaze. Seed dvaput izvršen i provjeren u lokalnoj bazi, bez promjene trećeg QA studija. [Rezultati i ograničenja](progress.md#m2-15--demo-i-predaja-23-listopada-2026): novi ručni browser prolaz i puna zbirka nisu ponovljeni; frontend nije mijenjan. Nema produkcijskih integracija ni novih migracija/ovisnosti. Raniji otvoreni M1 prihvati ostaju zasebni.
 
 **Ovisnost:** M2-14.
 

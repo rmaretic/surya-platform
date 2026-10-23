@@ -12,7 +12,7 @@ permissions:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     env:
       MAIL_MAILER: array
       SSR_TEST_URL: http://127.0.0.1:13714
@@ -53,7 +53,17 @@ jobs:
       - name: Check local mail inbox
         run: curl --fail --silent --show-error --retry 10 --retry-connrefused --retry-delay 1 http://127.0.0.1:18025/readyz
 
-      - name: Run CI Checks
+      - name: Frontend format lint and types
+        run: |
+          npm run check
+          npm run types:check
+
+      - name: PHP format and static analysis
+        run: |
+          composer lint:check
+          composer types:check
+
+      - name: M1 and M2 MySQL regression with live SSR
         shell: bash
         run: |
           node bootstrap/ssr/app.js > "$RUNNER_TEMP/surya-ssr.log" 2>&1 &
@@ -61,7 +71,25 @@ jobs:
           trap 'kill "$ssr_pid" 2>/dev/null || true' EXIT
           curl --fail --silent --show-error --retry 15 --retry-connrefused --retry-delay 1 "$SSR_TEST_URL/health"
           kill -0 "$ssr_pid"
-          composer ci:check
+          php artisan test --compact
+
+      - name: Repeat independent-process MySQL races
+        shell: bash
+        run: |
+          for attempt in 1 2; do
+            echo "MySQL race repetition $attempt"
+            php artisan test --compact tests/Feature/BookingConcurrencyTest.php
+          done
+
+      - name: Service diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          docker compose ps
+          docker compose logs --tail=80 mysql-testing mailpit
+          if [ -f "$RUNNER_TEMP/surya-ssr.log" ]; then
+            tail -80 "$RUNNER_TEMP/surya-ssr.log"
+          fi
 
       - name: Stop CI services
         if: always()

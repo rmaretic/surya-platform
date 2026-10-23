@@ -1264,3 +1264,85 @@ Puna zbirka, zasebna živa SSR regresija i novi browser prolazak platformskog
 2FA nisu izvršeni; client/SSR build i HTTP platformski 2FA test jesu.
 Sljedeći korak: **M2-14 — konkurentni testovi i CI**. Za punu regresiju
 pokrenuti `php artisan test --compact`.
+
+## M2-14 — konkurentni testovi i CI (22. listopada 2026.)
+
+**Status: dovršeno; završna format/lint provjera prošla 23. listopada 2026.**
+
+- Dodana četiri višeprocesna MySQL scenarija: jedinstvena isporuka obavijesti,
+  otkazani reminder u dva workera, ponovljeni dolazak i konkurentni sukob
+  prisutan/nedolazak. Testni sat prenosi se u workere; postojeća socket barijera
+  i tenant lock čuvaju kontrolirani istodobni početak.
+- Ciljana konkurentna zbirka: **20 prolazi / 295 assertiona**, 302 s.
+  Nakon Pint formata ista zbirka prolazi i unutar pune regresije.
+- Puna M1/M2 zbirka s `SSR_TEST_URL=http://127.0.0.1:13714`: **803 prolazi,
+  12 preskočeno / 6.125 assertiona**, 929 s. Živi SSR i Mailpit uključeni.
+  Preskočeni su postojeći single-tenant scaffold testovi dashboarda/postavki
+  iz `tests/Pest.php`; nisu novi skipovi ni zamjena za M2 prihvat.
+- PHPStan, Pint, Vue typecheck, client/SSR build i `git diff --check` prolaze.
+  Build zadržava postojeća upozorenja o fontaine/sourcemapama.
+  `npm run check` 23. listopada prolazi: 116 formatiranih datoteka i 100 datoteka bez lint grešaka ili upozorenja.
+- CI ima odvojene frontend/PHP provjere, punu MySQL regresiju uz živi SSR,
+  dva dodatna prolaza konkurentne zbirke i dijagnostiku servisa pri padu.
+  Timeout povećan na 45 minuta. README sadrži naredbe i mapu obveznih slučajeva.
+  M2 backlog izuzet je iz formatera kao i postojeći M1 backlog.
+- Chrome pregled: stvarni prazni rasporedi i označeni popunjeni Lotus/Balance
+  prikazi na 1440/390 px; slobodan/pun termin, reduced motion i ponovljena
+  Inertia navigacija. Mobilni dolasci: pending/present/cancelled, potvrda
+  nedolaska i vidljiv fokus tipkovnice. Bez preljeva ili JS grešaka nakon
+  učitavanja lokalnih asseta. Fixture propsi/presretanja bili su samo u
+  izoliranom pregledniku; nema poslovnih upisa u razvojnu bazu.
+- Sandbox blokade Docker/Node procesa riješene odobrenim lokalnim pokretanjem.
+  Završni formatter prvotno je čekao odobrenje zbog
+  usage limita automatskog reviewa. Nakon izričitog korisničkog odobrenja 23. listopada izvršen je `npm exec -- vp fmt README.md docs/progress.md`; format/lint i diff provjera prolaze.
+
+Udaljeni GitHub Actions run nije pokrenut (nema pusha/PR-a). Dva dodatna CI
+race ponavljanja konfigurirana su; lokalno izvršeni ciljani i puni prolaz.
+Nema migracija, novih ovisnosti, deploya ni produkcijskih integracija.
+Sljedeći korak: **M2-15 — demo i predaja**.
+
+## M2-15 — demo i predaja (23. listopada 2026.)
+
+**Status: dovršeno za lokalni razvojni opseg M2-15.**
+
+- `LocalBookingDemoSeeder` nadograđuje M1 demo za Lotus i Balance: dvije
+  vrste, dva instruktorska profila, dvije prostorije, tri proizvoda, privatni
+  prozori, puni/slobodni termini, aktivni/potrošeni/istekli grantovi,
+  pravovremeni otkaz s reversalom i povijesni pending dolasci.
+- Umjetni uvoz ima izvor prava, snapshotove i audit `demo.m2_seeded`.
+  Nema promjene aplikacijskog sata, emailova ni queue/outbox događaja pri
+  seedu. Naknadne poslovne radnje koriste postojeće servise.
+- Produkcija i staging odbijeni čak uz `--force`. Prvi unos zahtijeva prazan
+  M2 katalog. Konflikt poništava oba studija; tenant lock i marker čuvaju
+  ponavljanje bez prepisivanja poslovnih promjena. Tenant kontekst se čisti
+  i nakon iznimke. Nema migracija, novih ovisnosti ni promjene auth/2FA.
+- Osam novih MySQL testova prolazi, **177 assertiona**: sadržaj i izvori,
+  ponavljanje nakon 100 dana i izmjena, produkcijska zabrana, rollback pri
+  konfliktu kataloga/računa te cijeli poslovni demo za oba studija.
+  Tok uključuje owner kreiranje/dodjelu, zadnje mjesto, odbijanje drugoga,
+  povrat, privatni konflikt, dolazak bez debita, studijski povrat i točne
+  platformske agregate uz nepromijenjene podatke drugog studija.
+- Završna regresija: **204 testa / 1.807 assertiona prolazi**, 87 s na MySQL-u.
+  Naredba: `php artisan test --compact tests/Feature/LocalBookingDemoSeederTest.php tests/Feature/LocalDemoSeederTest.php tests/Feature/CreateBookingTest.php tests/Feature/ManageBookingTest.php tests/Feature/StudioCancellationTest.php tests/Feature/StudioAttendanceTest.php tests/Feature/OperationalDashboardTest.php tests/Feature/TenantIsolationTest.php`.
+- PHPStan (`php vendor/bin/phpstan analyse --memory-limit=512M --no-progress`)
+  i Pint (`php vendor/bin/pint --dirty --format agent`) prolaze.
+  Rute README scenarija provjerene s `php artisan route:list --path=studio --except-vendor --no-interaction`.
+- Seed stvarno pokrenut **dvaput u lokalnoj razvojnoj bazi**. Nakon ponavljanja
+  Lotus i Balance imaju svaki 9 termina, kapacitet 17, 7 confirmed rezervacija,
+  6 grantova i 0 outbox događaja. Postojeći treći QA studio ostaje bez poslovnih
+  zapisa. Nema brisanja ni resetiranja razvojne baze.
+- README sadrži pokretanje, račune, početno stanje, pravila, ponovljivi ručni
+  scenarij, lokalni inbox/scheduler/worker i granice. Backlog povezuje stvarne
+  datoteke i testove. Prethodne korisnikove izmjene M2-14 sačuvane su.
+- Završni `npm run check` prolazi: 116 datoteka ispravno formatirano,
+  100 bez lint grešaka/upozorenja. `git diff --check` prolazi. Formatter je
+  nakon sandbox zabrane i limita automatskog odobravanja uspješno izvršen
+  izvan sandboxa nakon korisnikove upute za nastavak.
+
+Puna zbirka, novi build/SSR i ručni browser prolazak cijelog novog demo toka
+nisu ponovljeni u M2-15; frontend nije mijenjan. Postojeći M2-14 vizualni i
+integracijski dokazi ostaju navedeni zasebno, ne predstavljaju novi ručni
+prolaz. Nema produkcijskog emaila, naplate, fiskalizacije ni deploya.
+Sljedeći korak: ručni prolaz README scenarija na popunjenoj lokalnoj aplikaciji
+i `php artisan test --compact` uz M2-14 servise; zatim zasebno definirati M3.
+Otvoreni M1 prihvati ostaju otvoreni.

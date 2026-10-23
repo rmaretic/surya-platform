@@ -1,9 +1,11 @@
 <?php
 
 use App\Actions\CreateBooking;
+use App\Actions\ManageBooking;
 use App\Actions\ManageStudioCancellation;
 use App\Models\Booking;
 use App\Models\ClassSession;
+use App\Models\OutboxEvent;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -234,4 +236,77 @@ test('move competing for the last target place either commits wholly or retains 
     expect((int) $grant->entries()->sum('amount'))->toBe(0);
     $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => $results[0]['status'] === 'ok' ? 'cancelled' : 'confirmed']);
     expect($booking->entries()->where('kind', 'reversal')->count())->toBe($results[0]['status'] === 'ok' ? 1 : 0);
+});
+
+test('concurrent notification workers claim one delivery and both clear tenant context', function () {
+    [$tenant, $customer, $session] = bookingSetup();
+    app(CreateBooking::class)->handle($customer, ['class_session_id' => $session->id, 'operation_key' => (string) Str::uuid()]);
+    $event = OutboxEvent::sole();
+    $operation = [...bookingOperation($customer, []), 'action' => 'notification', 'event_id' => $event->id];
+
+    $results = bookingRace([$operation, $operation], [$tenant->id]);
+
+    expect(array_column($results, 'status'))->toBe(['ok', 'ok']);
+    expect(array_sum(array_column($results, 'sent')))->toBe(1);
+    expect(array_column($results, 'context_cleared'))->toBe([true, true]);
+    $this->assertDatabaseHas('outbox_events', ['id' => $event->id, 'status' => 'delivered', 'attempts' => 1]);
+    $this->assertDatabaseCount('credit_entries', 2);
+});
+
+test('concurrent workers suppress a reminder cancelled before delivery', function () {
+    [$tenant, $customer, $session] = bookingSetup();
+    $booking = app(CreateBooking::class)->handle($customer, ['class_session_id' => $session->id, 'operation_key' => (string) Str::uuid()]);
+    $event = OutboxEvent::sole();
+    $event->forceFill(['event_type' => 'booking.reminder'])->save();
+    $this->travelTo(CarbonImmutable::parse('2026-10-18 10:00:00 UTC'));
+    app(ManageBooking::class)->handle($customer, $booking, ['operation_key' => (string) Str::uuid()]);
+    $operation = [...bookingOperation($customer, []), 'action' => 'notification', 'event_id' => $event->id];
+
+    $results = bookingRace([$operation, $operation], [$tenant->id]);
+
+    expect(array_column($results, 'status'))->toBe(['ok', 'ok']);
+    expect(array_column($results, 'sent'))->toBe([0, 0]);
+    expect(array_column($results, 'context_cleared'))->toBe([true, true]);
+    $this->assertDatabaseHas('outbox_events', ['id' => $event->id, 'status' => 'failed', 'attempts' => 0, 'last_error_code' => 'suppressed_ineligible']);
+    $this->assertDatabaseCount('credit_entries', 3);
+});
+
+test('concurrent attendance retries record one arrival and never spend another credit', function () {
+    [$tenant, $customer, $session] = bookingSetup();
+    $booking = app(CreateBooking::class)->handle($customer, ['class_session_id' => $session->id, 'operation_key' => (string) Str::uuid()]);
+    $manager = User::factory()->for($tenant)->withTwoFactor()->create(['role' => 'manager']);
+    $operation = [...bookingOperation($manager, ['status' => 'present', 'expected_status' => 'pending']),
+        'action' => 'attendance', 'booking_id' => $booking->id];
+
+    $results = bookingRace([$operation, $operation], [$tenant->id]);
+
+    expect(array_column($results, 'status'))->toBe(['ok', 'ok']);
+    $this->assertDatabaseCount('attendance_records', 1);
+    $this->assertDatabaseHas('attendance_records', ['booking_id' => $booking->id, 'status' => 'present', 'recorded_by_user_id' => $manager->id]);
+    expect(DB::table('tenant_audit_logs')->where('action', 'studio.attendance_recorded')->count())->toBe(1);
+    $this->assertDatabaseCount('credit_entries', 2);
+    $this->assertDatabaseCount('outbox_events', 1);
+});
+
+test('conflicting concurrent attendance writes preserve the winner and reject stale evidence', function () {
+    [$tenant, $customer, $session] = bookingSetup();
+    $booking = app(CreateBooking::class)->handle($customer, ['class_session_id' => $session->id, 'operation_key' => (string) Str::uuid()]);
+    $manager = User::factory()->for($tenant)->withTwoFactor()->create(['role' => 'manager']);
+    $this->travelTo(CarbonImmutable::parse('2026-10-19 11:00:00 UTC'));
+    $operations = [];
+    foreach (['present', 'no_show'] as $status) {
+        $operations[] = [...bookingOperation($manager, ['status' => $status, 'expected_status' => 'pending']),
+            'action' => 'attendance', 'booking_id' => $booking->id];
+    }
+
+    $results = bookingRace($operations, [$tenant->id]);
+
+    expect(array_column($results, 'status'))->toEqualCanonicalizing(['ok', 'rejected']);
+    $loser = $results[0]['status'] === 'rejected' ? 0 : 1;
+    expect($results[$loser]['errors'])->toHaveKey('expected_status');
+    $this->assertDatabaseCount('attendance_records', 1);
+    $this->assertDatabaseHas('attendance_records', ['booking_id' => $booking->id, 'status' => $operations[1 - $loser]['data']['status']]);
+    expect(DB::table('tenant_audit_logs')->where('action', 'studio.attendance_recorded')->count())->toBe(1);
+    $this->assertDatabaseCount('credit_entries', 2);
+    $this->assertDatabaseCount('outbox_events', 1);
 });

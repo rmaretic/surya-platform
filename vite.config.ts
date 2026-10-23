@@ -71,6 +71,7 @@ export default defineConfig({
             'AGENTS.md',
             'docs/specifikacija-platforme-v1.md',
             'docs/razvojni-backlog-m1.md',
+            'docs/razvojni-backlog-m2.md',
             'composer.json',
             'resources/js/components/ui/*',
             'resources/views/mail/*',
